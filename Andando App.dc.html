@@ -196,12 +196,12 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 </div>
 <div style="flex:none;display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:6px 0">
 <button onClick="{{ exportBackup }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Backup</span><span style="font-size:12.5px;font-weight:800;color:#5E3B24">Export all trips ›</span></button>
-<div style="display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Reminders & calendar</span><span style="font-size:12.5px;color:#7A7168">Next update</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Google Calendar</span><span style="font-size:12.5px;color:#7A7168">{{ calLine }}</span></div>
 <div style="display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Email access</span><span style="font-size:12.5px;color:#7A7168">None</span></div>
 <button onClick="{{ openPrototype }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Design demo</span><span style="font-size:12.5px;font-weight:800;color:#5E3B24">Open ›</span></button>
 <button onClick="{{ doSignOut }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700;color:#B4472F">Sign out</span></button>
 </div>
-<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v1</div>
+<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v2</div>
 </div>
 </sc-if>
 
@@ -334,7 +334,7 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 <sc-if value="{{ tk.multi }}" hint-placeholder-val="{{ false }}"><div style="display:flex;background:#F1EBE1;border-radius:16px;padding:4px;gap:4px">
 <sc-for list="{{ tk.tabs }}" as="p" hint-placeholder-count="2"><button onClick="{{ p.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;font-size:14px;font-weight:800;padding:10px;border-radius:12px;background:{{ p.bg }}">{{ p.label }}</button></sc-for>
 </div></sc-if>
-<div style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center"><img src="{{ tk.img }}" alt="Ticket code" style="max-width:100%;max-height:100%;object-fit:contain;image-rendering:pixelated"></div>
+<div role="img" aria-label="Ticket code" style="flex:1;min-height:0;background:center / contain no-repeat url({{ tk.img }});image-rendering:pixelated"></div>
 <div style="text-align:center;font-size:12.5px;font-weight:700;color:#8A8076">Turn your screen brightness up · works with no signal</div>
 </div>
 </sc-if>
@@ -450,20 +450,34 @@ class Component extends DCLogic {
     this.setState({busy:''});
     if(m==='NOKEY'){ this.setState({tab:'settings',sheet:null}); return this.showToast('Paste your Gemini key in Settings first'); }
     if(m==='KEY') return this.showToast('Gemini refused the key. Check it in Settings → Test it.');
-    this.showToast('Something went wrong: '+m.slice(0,80));
+    this.showToast('Something went wrong: '+m.slice(0,160));
   }
 
   async gemini(parts){
     if(!this.state.key) throw new Error('NOKEY');
     const r = await fetch(GEMINI,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':this.state.key},
       body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:0.1}})});
-    if(r.status===400||r.status===401||r.status===403) throw new Error('KEY');
-    if(!r.ok) throw new Error('Gemini '+r.status);
+    if(!r.ok){ let msg=''; try{ const ej = await r.json(); msg = (ej.error && ej.error.message) || ''; }catch(e){}
+      if((r.status===400||r.status===401||r.status===403) && /api key|API_KEY|permission|unauthori|credential/i.test(msg)) throw new Error('KEY');
+      if(r.status===429) throw new Error('Gemini is busy (free limit for this minute). Try again in a minute.');
+      throw new Error('Gemini '+r.status+(msg?': '+msg:'')); }
     const j = await r.json();
     const txt = (j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
     try{ return JSON.parse(txt); }catch(e){ const m = txt.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : {items:[]}; }
   }
 
+  async toWav(blob){
+    const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC();
+    const src = await ac.decodeAudioData(await blob.arrayBuffer()); try{ ac.close(); }catch(e){}
+    const rate = 16000, len = Math.max(1, Math.ceil(src.duration*rate));
+    const off = new OfflineAudioContext(1, len, rate); const node = off.createBufferSource(); node.buffer = src; node.connect(off.destination); node.start();
+    const out = (await off.startRendering()).getChannelData(0);
+    const buf = new ArrayBuffer(44 + out.length*2), v = new DataView(buf); let o = 0;
+    const W = s => { for(let i=0;i<s.length;i++) v.setUint8(o++, s.charCodeAt(i)); }, U32 = x => { v.setUint32(o,x,true); o+=4; }, U16 = x => { v.setUint16(o,x,true); o+=2; };
+    W('RIFF'); U32(36+out.length*2); W('WAVE'); W('fmt '); U32(16); U16(1); U16(1); U32(rate); U32(rate*2); U16(2); U16(16); W('data'); U32(out.length*2);
+    for(let i=0;i<out.length;i++){ const x = Math.max(-1, Math.min(1, out[i])); v.setInt16(o, x<0 ? x*0x8000 : x*0x7FFF, true); o+=2; }
+    return buf;
+  }
   async findCodes(canvases){
     const out = [];
     if(!('BarcodeDetector' in window)) return out;
@@ -525,7 +539,9 @@ class Component extends DCLogic {
       rec.onstop = async () => {
         st.getTracks().forEach(t=>t.stop());
         const type = (rec.mimeType||mime||'audio/webm').split(';')[0];
-        try{ const blob = new Blob(chunks,{type}); const res = await this.gemini([{text:PROMPT(iso(new Date()))},{inline_data:{mime_type:type,data:b64(await blob.arrayBuffer())}}]);
+        try{ const blob = new Blob(chunks,{type}); let part;
+          try{ part = {inline_data:{mime_type:'audio/wav',data:b64(await this.toWav(blob))}}; }catch(cv){ part = {inline_data:{mime_type:type,data:b64(await blob.arrayBuffer())}}; }
+          const res = await this.gemini([{text:PROMPT(iso(new Date()))},part]);
           this.setState({sheet:null}); this.review(res,'voice'); }catch(e){ this.setState({sheet:null}); this.fail(e); }
       };
       rec.start(); this.rec = rec; this.setState({sheet:'voice', voice:'rec', sayText:''});
@@ -621,7 +637,7 @@ class Component extends DCLogic {
     const inf = this.dayInfo(s.sel), free = inf.free;
     const card = (i, o={}) => { const t = T[i.type]||T.other, booked = i.status==='booked', calm = !booked && free;
       return {time: o.time || i.time || '—', kind: o.kind || t.k, title: o.title || i.title,
-        sub: calm ? 'Unplanned, by choice' : (o.sub || [i.operator, i.number, i.ref?('ref '+i.ref):'', (i.who||[]).length>1?`with ${pname}`:''].filter(Boolean).join(' · ') || (booked?'Booked':'Not booked yet')),
+        sub: calm ? 'Unplanned, by choice' : i.calendarRemoved ? 'Removed from Google Calendar · tap to delete' : (o.sub || [i.operator, i.number, i.ref?('ref '+i.ref):'', (i.who||[]).length>1?`with ${pname}`:''].filter(Boolean).join(' · ') || (booked?'Booked':'Not booked yet')),
         tileBg: calm?'#F4EEE5':t.bg, tileFg: calm?'#8A8076':t.fg, cardBg: booked?'#FFFFFF':calm?'#FBF8F3':'#FFF8F5',
         border: booked?'1.5px solid #F1EBE1':calm?'1.5px dashed #DDD3C4':'1.5px solid #F5CFC2', subFg: booked||calm?'#7A7168':'#A0523A',
         action: booked ? ((i.codes&&i.codes.length)||i.page ? 'QR' : '✓') : calm ? 'Later' : 'Sort',
@@ -660,7 +676,7 @@ class Component extends DCLogic {
         addCode:()=>{ this._codeFor = it.id; this.codeRef.current && this.codeRef.current.click(); },
         edit:()=>this.setState({sheet:'quick', q:{id:it.id,type:it.type,title:it.title,date:it.date,time:it.time||'',endDate:it.endDate||'',ref:it.ref||'',both:hasP||!pid,booked}}),
         remove:()=>{ if(!window.confirm(`Delete "${it.title}" for ${(it.who||[]).length>1?'both of you':'you'}?`)) return; const snap={...it}; delete snap.id; this.F.deleteDoc(this.F.doc(this.db,'items',it.id)); this.setState({sheet:null}); this.showToast('Deleted', ()=>{ this.F.setDoc(this.F.doc(this.db,'items',it.id), snap); this.showToast('Restored ✓'); }); },
-        hasHist: !!(it.hist&&it.hist.length), hist:(it.hist||[]).slice().sort((a,b)=>b.at-a.at).slice(0,5).map(h=>({line:`${h.by===uid?'You':pname} ${h.t}`, when:this.dayName(iso(new Date(h.at)))}))}; })() : {facts:[],links:[],hist:[]};
+        hasHist: !!(it.hist&&it.hist.length), hist:(it.hist||[]).slice().sort((a,b)=>b.at-a.at).slice(0,5).map(h=>({line:`${h.by===uid?'You':h.by==='calendar'?'Google Calendar':pname} ${h.t}`, when:this.dayName(iso(new Date(h.at)))}))}; })() : {facts:[],links:[],hist:[]};
 
     const tki = s.items.find(i=>i.id===s.ticketId);
     const tk = tki ? (()=>{ const t=T[tki.type]||T.other; const imgs = (tki.codes||[]).map(c=>c.img); if(!imgs.length && tki.page) imgs.push(tki.page); const idx=Math.min(s.codeIdx,imgs.length-1);
@@ -742,6 +758,7 @@ class Component extends DCLogic {
       dupAdd:()=>{ const x=s.dup; this.setState({dup:null}); this.addItems(x.list,x.source,x.extra); },
       d,
       hasTicket:!!tki && !!tk.img, tk, closeTicket:()=>this.setState({ticketId:null}),
+      calLine: s.items.some(i=>i.source==='calendar') ? 'Syncing ✓ every 10 min' : 'Set up the helper script',
       hasBusy:!!s.busy, busy:s.busy,
       hasToast:!!s.toast, toast:s.toast, toastUndo:s.toastUndo, doUndo:()=>{ const f=this.undoFn; this.undoFn=null; this.setState({toastUndo:false}); if(f) f(); }
     };
