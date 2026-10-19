@@ -265,8 +265,9 @@ function buildC(el,W){
 const VIS_D={
   me:{'724':[0],'620':[2023,2026],'250':[2019,2023],'380':[2022],'504':[2024],'076':[2018,2025],'484':[2025],'764':[2024],'360':[2024],'300':[2023],'826':[2016,2022],'276':[2021],'032':[2025],'152':[2025]},
   maria:{'724':[0],'620':[2026],'250':[2021],'380':[2019,2022],'076':[2025],'484':[2025],'032':[2025],'152':[2025],'604':[2017],'170':[2020],'528':[2023],'756':[2024]}};
-const SAMPLE=Q.get('sample')==='1';
-const DATA_D={}, CHAL_SEEN={}; ['me','maria'].forEach(u=>{DATA_D[u]=new Map(SAMPLE?Object.entries(VIS_D[u]).map(([k,v])=>[k,[...v]]):[]); if(ADD){const y=DATA_D[u].get(ADD)||[]; if(!y.includes(2026)) DATA_D[u].set(ADD,[...y,2026]);}});
+const SAMPLE=Q.get('sample')==='1', LIVE=Q.get('live')==='1';
+let SAVED=null; try{ SAVED=JSON.parse(localStorage.getItem('andando-map')||'null'); }catch(e){}
+const DATA_D={}, CHAL_SEEN={}; ['me','maria'].forEach(u=>{DATA_D[u]=new Map(SAMPLE?Object.entries(VIS_D[u]).map(([k,v])=>[k,[...v]]):(LIVE&&u==='me'&&SAVED?Object.entries(SAVED):[])); if(ADD){const y=DATA_D[u].get(ADD)||[]; if(!y.includes(2026)) DATA_D[u].set(ADD,[...y,2026]);}});
 function buildD(el,W){
   let user=(Q.get('user')==='maria')?'maria':'me', st=DATA_D[user], sel=null, tab='visited';
   const YEARS=[2026,2025,2024,2023,2022,2021,2020];
@@ -282,13 +283,13 @@ function buildD(el,W){
   host.appendChild(sheet);
   const chal=document.createElement('div');chal.className='chal';host.appendChild(chal);
   const other=()=>user==='me'?'maria':'me', oname=()=>user==='me'?'Maria':'Partner', oin=()=>user==='me'?'Maria':'your partner', oinC=()=>user==='me'?'Maria':'Your partner';
-  function race(){const a=st.size,b=DATA_D[other()].size;
+  function race(){if(LIVE){el.querySelector('.race').style.display='none';return;}const a=st.size,b=DATA_D[other()].size;
     el.querySelector('.race').innerHTML=`<span class="${a>b?'lead':''}">You <b>${a}</b></span><span class="${b>a?'lead':''}">${oname()} <b>${b}</b></span>`;}
   function showChal(){ if(st.size>0||CHAL_SEEN[user]) {chal.classList.remove('open');return;}
     const b=DATA_D[other()].size;
     chal.innerHTML=`<div class="cc"><div class="kk2">THE RACE IS ON</div><h3>Paint your world</h3>
       <p>Add every country you've ever been to. You and ${oin()} each have your own globe, and whoever has more takes the lead.${b?` ${oinC()} already has ${b}.`:' Go first.'}</p>
-      <div class="vs"><div><b>0</b><small>You</small></div><i>vs</i><div><b>${b}</b><small>${oname()}</small></div></div>
+      ${LIVE?'':`<div class="vs"><div><b>0</b><small>You</small></div><i>vs</i><div><b>${b}</b><small>${oname()}</small></div></div>`}
       <button class="go">Add my countries</button><button class="later">Later</button></div>`;
     chal.classList.add('open');
     chal.querySelector('.go').onclick=()=>{CHAL_SEEN[user]=1;chal.classList.remove('open');tab='all';open();};
@@ -361,7 +362,7 @@ function buildD(el,W){
   function upd(){
     el.querySelector('.kk').textContent=user==='maria'?'Maria · only you see this':'You · only you see this';
     el.querySelectorAll('.who button').forEach(b=>b.classList.toggle('on',b.dataset.u===user));
-    recolor();el.querySelector('.n').textContent=st.size;el.querySelector('.pct').textContent=Math.round(st.size/195*100)+'%';stamps();race();if(sheet.classList.contains('open'))list();}
+    recolor();el.querySelector('.n').textContent=st.size;el.querySelector('.pct').textContent=Math.round(st.size/195*100)+'%';stamps();race();if(sheet.classList.contains('open'))list();if(LIVE){try{localStorage.setItem('andando-map',JSON.stringify(Object.fromEntries(st)));}catch(e){}}}
   draw();upd();showChal();
 }
 
