@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFB23E">
+<title>Andando!</title>
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F1EADF;font-family:'Nunito',system-ui,sans-serif;color:#2A2622;-webkit-font-smoothing:antialiased}
+a{color:#8A5A3B;text-decoration:none}a:hover{color:#5E3B24}
+input::placeholder{color:#B3A99C}
+@keyframes legPulse{0%{transform:scale(.85);opacity:.5}100%{transform:scale(1.8);opacity:0}}
+@keyframes legBar{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+@keyframes legSpin{to{transform:rotate(360deg)}}
+*::-webkit-scrollbar{width:0;height:0}*{scrollbar-width:none}
+</style>
+</helmet>
+<div style="min-height:100vh;display:flex;flex-wrap:wrap;gap:56px;align-items:center;justify-content:center;padding:{{ fr.pad }};box-sizing:border-box">
+
+<sc-if value="{{ showIntro }}" hint-placeholder-val="{{ true }}">
+<div style="max-width:300px;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:center;gap:10px"><img src="icon-192.png" alt="Andando! app icon" style="width:40px;height:40px;border-radius:12px"><span style="font:500 11px 'DM Mono',monospace;letter-spacing:.1em;color:#7A7168;white-space:nowrap">ANDANDO! · MVP v7</span></div>
+<div style="font-size:30px;line-height:1.12;font-weight:800;letter-spacing:-.02em;text-wrap:pretty">Your agenda. Hers. Shared only when you travel together.</div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;border-radius:18px;padding:12px 14px">
+<span style="font-size:12px;font-weight:800;color:#8A8076;letter-spacing:.04em">PREVIEW THE APP AS</span>
+<div style="display:flex;background:#F1EBE1;border-radius:14px;padding:3px">
+<sc-for list="{{ viewers }}" as="v" hint-placeholder-count="2"><button onClick="{{ v.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;font-size:13.5px;font-weight:800;padding:9px;border-radius:11px;background:{{ v.bg }};box-shadow:{{ v.sh }}">{{ v.label }}</button></sc-for>
+</div>
+<span style="font-size:12px;color:#7A7168;line-height:1.4">Maria has a solo Sintra day trip on Thursday. It's only in her agenda until she adds you.</span>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;font-size:13.5px;line-height:1.45;color:#5A524A">
+<div><b style="color:#2A2622">On your home screen.</b> Open in Chrome on Android → ⋮ → Add to Home screen. Andando! gets its own icon and opens like an app.</div>
+<div><b style="color:#2A2622">Voice in English or Spanish.</b> No setting needed. Andando! detects the language each time.</div>
+<div><b style="color:#2A2622">Map tab.</b> Spinning globe, stamps by year, and the full list one tap away.</div>
+<div><b style="color:#2A2622">New-country story.</b> A short story and one place to visit, as soon as you land.</div>
+<div style="display:flex;flex-wrap:wrap;gap:8px"><button onClick="{{ toggleDisrupt }}" style="all:unset;cursor:pointer;align-self:flex-start;font-size:13px;font-weight:800;padding:10px 14px;border-radius:12px;background:{{ disruptBtnBg }};color:#FFFFFF">{{ disruptBtn }}</button>
+<button onClick="{{ landManila }}" style="all:unset;cursor:pointer;font-size:13px;font-weight:800;padding:10px 14px;border-radius:12px;background:{{ th.accent }};color:#FFFFFF">Simulate landing in Manila</button>
+</div>
+</div>
+<div style="font-size:12.5px;line-height:1.55;color:#7A7168;border-top:1.5px solid #E2D9CB;padding-top:14px">Try: say something twice on <b>+ → Say it</b> (English, then Spanish) · <b>Simulate a train delay</b> · open Friday's flight for Flightradar24 · <b>+ → PDF</b> to add Saturday's ferry · open today's train for TrainTracker · <b>Thu</b> has a concert ticket.</div>
+</div>
+</sc-if>
+
+<div style="width:{{ fr.w }};height:{{ fr.h }};flex:none;background:#2A2622;border-radius:{{ fr.r1 }};padding:{{ fr.p }};box-sizing:border-box;box-shadow:{{ fr.sh }}">
+<div style="position:relative;width:100%;height:100%;background:{{ th.bg }};border-radius:{{ fr.r2 }};overflow:hidden;display:flex;flex-direction:column">
+
+<div style="height:36px;flex:none;display:{{ fr.sbar }};align-items:center;justify-content:space-between;padding:0 26px 0 30px;font-weight:700;font-size:13px;position:relative">
+<span>10:20</span>
+<span style="position:absolute;left:50%;top:11px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:#2A2622"></span>
+<span style="font:500 11px 'DM Mono',monospace;white-space:nowrap">5G · 82%</span>
+</div>
+
+<sc-if value="{{ isUpcoming }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;min-height:0;display:flex;flex-direction:column">
+<div style="flex:none;padding:6px 16px 0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+<button onClick="{{ goTrip }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;background:{{ th.soft }};border-radius:16px;padding:5px 12px 5px 5px" style-hover="background:{{ th.softHover }}">
+<span style="width:30px;height:30px;border-radius:11px;background:repeating-linear-gradient(45deg,rgba(255,255,255,.8) 0 4px,rgba(255,255,255,.35) 4px 8px);display:flex;align-items:center;justify-content:center;font:500 6.5px/1.1 'DM Mono',monospace;color:{{ th.ink }}">art</span>
+<span style="display:flex;flex-direction:column"><span style="font-size:13.5px;font-weight:800;color:{{ th.ink }};line-height:1.15;white-space:nowrap">Iberia → Manila</span><span style="font-size:11px;font-weight:700;color:{{ th.ink }};opacity:.75;line-height:1.2;white-space:nowrap">{{ hello }}</span></span>
+</button>
+<div style="display:flex;gap:8px">
+<button onClick="{{ goSettings }}" style="all:unset;cursor:pointer;width:44px;height:44px;border-radius:16px;background:#FFFFFF;border:1.5px solid #F1EBE1;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:18px;color:#2A2622" style-hover="background:#FCFAF6">⚙</button>
+<button onClick="{{ goAlerts }}" style="all:unset;cursor:pointer;position:relative;width:44px;height:44px;border-radius:16px;background:#FFFFFF;border:1.5px solid #F1EBE1;box-sizing:border-box;display:flex;align-items:center;justify-content:center" style-hover="background:#FCFAF6">
+<span style="width:14px;height:14px;border-radius:50%;border:2.5px solid #2A2622;box-sizing:border-box"></span>
+<sc-if value="{{ hasAlertBadge }}" hint-placeholder-val="{{ true }}"><span style="position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#E8664A;color:#fff;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #fff">{{ alertCount }}</span></sc-if>
+</button>
+</div>
+</div>
+
+<div style="flex:none;display:flex;gap:4px;padding:12px 12px 2px">
+<sc-for list="{{ strip }}" as="d" hint-placeholder-count="7">
+<button onClick="{{ d.pick }}" style="all:unset;cursor:pointer;flex:1 1 0;min-width:0;height:66px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:16px;background:{{ d.bg }};color:{{ d.fg }};border:{{ d.bd }}">
+<span style="font-size:11px;font-weight:700;opacity:.8">{{ d.dow }}</span>
+<span style="font-size:18px;font-weight:800;line-height:1.1">{{ d.num }}</span>
+<span style="font-size:10.5px;font-weight:800;height:13px;line-height:13px;white-space:nowrap">{{ d.mark }}</span>
+</button>
+</sc-for>
+</div>
+
+<div style="flex:none;padding:14px 20px 6px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+<div style="min-width:0"><div style="font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1">{{ day.title }}</div><div style="font-size:13px;font-weight:700;color:#8A8076;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ day.sub }}</div></div>
+<sc-if value="{{ day.canFree }}" hint-placeholder-val="{{ true }}">
+<button onClick="{{ toggleFree }}" style="all:unset;cursor:pointer;flex:none;white-space:nowrap;font-size:12px;font-weight:800;padding:8px 11px;border-radius:12px;background:{{ day.freeBg }};color:{{ day.freeFg }};border:1.5px solid {{ day.freeBd }}">{{ day.freeLabel }}</button>
+</sc-if>
+</div>
+<sc-if value="{{ day.isFree }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;margin:0 16px 4px;font-size:12.5px;font-weight:700;color:#7A7168;background:#F4EEE5;border-radius:12px;padding:8px 12px">Going with the flow. No reminders for this day.</div>
+</sc-if>
+
+<sc-if value="{{ hasLeave }}" hint-placeholder-val="{{ true }}">
+<button onClick="{{ lv.open }}" style="all:unset;cursor:pointer;flex:none;margin:2px 16px 4px;display:flex;align-items:center;gap:12px;padding:11px 11px 11px 16px;border-radius:22px;background:{{ lv.bg }};color:#FFFFFF">
+<span style="flex:1;min-width:0"><span style="display:block;font-size:11px;font-weight:800;letter-spacing:.06em;opacity:.85;white-space:nowrap">{{ lv.kicker }}</span><span style="display:block;font-size:21px;font-weight:800;letter-spacing:-.01em;line-height:1.2">{{ lv.title }}</span><span style="display:block;font-size:12.5px;font-weight:700;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ lv.sub }}</span></span>
+<span style="flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;width:64px;height:56px;border-radius:16px;background:rgba(255,255,255,.18)"><span style="font:500 17px 'DM Mono',monospace">{{ lv.mins }}</span><span style="font-size:10px;font-weight:800;opacity:.9">to go</span></span>
+</button>
+</sc-if>
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 16px 10px">
+<sc-for list="{{ dayItems }}" as="it" hint-placeholder-count="4">
+<div onClick="{{ it.open }}" style="cursor:pointer;flex:none;display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 10px 9px 9px;border-radius:22px;background:{{ it.cardBg }};border:{{ it.border }};transition:transform .15s" style-hover="transform:translateY(-1px)">
+<span style="width:58px;height:58px;border-radius:17px;background:{{ it.tileBg }};color:{{ it.tileFg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<span style="font:500 14px 'DM Mono',monospace;letter-spacing:-.02em">{{ it.time }}</span>
+<span style="font-size:9px;font-weight:800;letter-spacing:.05em">{{ it.kind }}</span>
+</span>
+<span style="min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="font-size:15.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.title }}</span>
+<span style="font-size:12.5px;color:{{ it.subFg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.sub }}</span>
+<sc-if value="{{ it.hasNudge }}" hint-placeholder-val="{{ false }}"><span style="align-self:flex-start;margin-top:3px;font-size:11px;font-weight:800;color:{{ th.ink }};background:{{ th.soft }};padding:2px 8px;border-radius:8px;white-space:nowrap">{{ it.nudge }}</span></sc-if>
+<sc-if value="{{ it.hasLive }}" hint-placeholder-val="{{ false }}"><span style="align-self:flex-start;margin-top:3px;font-size:11px;font-weight:800;color:{{ it.liveFg }};background:{{ it.liveBg }};padding:2px 8px;border-radius:8px;white-space:nowrap">{{ it.live }}</span></sc-if>
+</span>
+<sc-if value="{{ it.hasQr }}" hint-placeholder-val="{{ false }}"><button onClick="{{ it.showQr }}" style="all:unset;cursor:pointer;font-size:12px;font-weight:800;padding:9px 11px;border-radius:12px;background:{{ th.accent }};color:#FFFFFF" style-hover="background:{{ th.hover }}">QR</button></sc-if>
+<sc-if value="{{ it.plainBooked }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:10px;background:{{ it.whoBg }};color:{{ it.whoFg }};white-space:nowrap">{{ it.whoLabel }}</span></sc-if>
+<sc-if value="{{ it.pending }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;font-weight:800;padding:8px 11px;border-radius:12px;background:{{ it.actBg }};color:{{ it.actFg }};white-space:nowrap">{{ it.action }}</span></sc-if>
+</div>
+</sc-for>
+<sc-if value="{{ dayEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:10px;padding:34px 20px;border-radius:24px;background:#FFFFFF;border:1.5px solid #F1EBE1;text-align:center">
+<div style="font-size:16px;font-weight:800">Nothing planned</div>
+<div style="font-size:13px;color:#8A8076;max-width:230px;line-height:1.45">Plan something, or just leave it open.</div>
+<button onClick="{{ openAdd }}" style="all:unset;cursor:pointer;font-size:14px;font-weight:800;padding:10px 16px;border-radius:14px;background:{{ th.soft }};color:{{ th.ink }}">+ Plan this day</button>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{ hasElsewhere }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;display:flex;align-items:center;gap:8px;padding:8px 16px 10px">
+<span style="font-size:12px;font-weight:800;color:#8A8076;flex:none;white-space:nowrap">Also to sort</span>
+<div style="display:flex;gap:6px;overflow-x:auto">
+<sc-for list="{{ elsewhere }}" as="e" hint-placeholder-count="2"><button onClick="{{ e.pick }}" style="all:unset;cursor:pointer;flex:none;white-space:nowrap;font-size:12.5px;font-weight:800;padding:7px 11px;border-radius:12px;background:#FCE3DC;color:#B4472F">{{ e.label }}</button></sc-for>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ allSorted }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;padding:8px 16px 10px;font-size:12.5px;font-weight:800;color:{{ th.ink }}">Everything else this week is sorted ✓</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTickets }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:8px 16px 20px">
+<div style="flex:none;padding:0 4px 4px"><div style="font-size:13px;font-weight:700;color:#8A8076">Ready to scan · offline</div><div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Tickets</div></div>
+<sc-for list="{{ tickets }}" as="t" hint-placeholder-count="2">
+<button onClick="{{ t.show }}" style="all:unset;cursor:pointer;flex:none;display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:24px;overflow:hidden" style-hover="transform:translateY(-1px)">
+<span style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:{{ t.tileBg }};color:{{ t.tileFg }};font-size:12px;font-weight:800;letter-spacing:.04em;white-space:nowrap"><span>{{ t.kind }} · {{ t.when }}</span><span>{{ t.pax }}</span></span>
+<span style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;gap:12px">
+<span style="min-width:0;flex:1"><span style="display:block;font-size:20px;line-height:1.2;font-weight:800;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.route }}</span><span style="display:block;font-size:12.5px;line-height:1.3;color:#7A7168;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.sub }}</span></span>
+<span style="flex:none;white-space:nowrap;font-size:13px;font-weight:800;padding:10px 14px;border-radius:14px;background:{{ th.accent }};color:#FFFFFF">Show QR</span>
+</span>
+</button>
+</sc-for>
+<div style="flex:none;font-size:12.5px;color:#7A7168;line-height:1.5;padding:4px 6px">Andando! pulls the QR or barcode out of PDFs and screenshots you add, one for each traveller. Anything booked in Andando! lands here automatically.</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTrip }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:8px 16px 22px">
+<div style="flex:none;display:flex;align-items:center;gap:12px;background:{{ th.soft }};border-radius:24px;padding:10px 14px 10px 10px">
+<span style="width:64px;height:64px;flex:none;border-radius:18px;background:repeating-linear-gradient(45deg,rgba(255,255,255,.8) 0 5px,rgba(255,255,255,.35) 5px 10px);display:flex;align-items:center;justify-content:center;text-align:center;font:500 8px/1.2 'DM Mono',monospace;color:{{ th.ink }};padding:4px;box-sizing:border-box">{{ th.motif }}</span>
+<span style="flex:1;min-width:0"><span style="display:block;font-size:22px;font-weight:800;letter-spacing:-.01em;color:{{ th.ink }};line-height:1.15">Iberia → Manila</span><span style="display:block;font-size:12.5px;font-weight:700;color:{{ th.ink }};opacity:.8">14 Oct – 3 Nov · You + Maria</span></span>
+<button onClick="{{ openTheme }}" style="all:unset;cursor:pointer;flex:none;font-size:12px;font-weight:800;padding:7px 10px;border-radius:11px;background:#FFFFFF;color:{{ th.ink }}">Theme</button>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;padding:0 4px"><span style="font-size:17px;font-weight:800">Entry documents</span><span style="font-size:12px;font-weight:800;color:#B4472F">{{ docsTodo }}</span></div>
+<sc-for list="{{ countries }}" as="c" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;overflow:hidden">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px 8px"><span style="font-size:15px;font-weight:800">{{ c.name }}</span><span style="font-size:11.5px;font-weight:800;color:#8A8076;white-space:nowrap">{{ c.when }}</span></div>
+<sc-for list="{{ c.rows }}" as="r" hint-placeholder-count="3">
+<div onClick="{{ r.go }}" style="cursor:{{ r.cursor }};display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 16px;border-top:1.5px solid #F7F2EA">
+<span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800">{{ r.title }}</span><span style="display:block;font-size:12px;color:#7A7168;line-height:1.4;margin-top:1px;text-wrap:pretty">{{ r.sub }}</span></span>
+<span style="font-size:11.5px;font-weight:800;padding:5px 9px;border-radius:9px;background:{{ r.bg }};color:{{ r.fg }};white-space:nowrap">{{ r.badge }}</span>
+</div>
+</sc-for>
+</div>
+</sc-for>
+<div style="font-size:11.5px;color:#8A8076;line-height:1.45;padding:0 6px">Based on your Spanish (EU) passports. Andando! checks official government sources and re-checks 7 days before each border, because rules change.</div>
+</div>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:0 4px">
+<span style="font-size:17px;font-weight:800">Checklist</span>
+<button onClick="{{ toggleChecklist }}" style="all:unset;cursor:pointer;width:48px;height:28px;border-radius:14px;background:{{ clTrack }};display:flex;align-items:center;justify-content:{{ clAlign }};padding:0 3px;box-sizing:border-box"><span style="width:22px;height:22px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.15)"></span></button>
+</div>
+<sc-if value="{{ clOff }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:#8A8076;padding:12px 16px;background:#F4EEE5;border-radius:18px">No checklist for this trip. Switch it on whenever you want one.</div></sc-if>
+<sc-if value="{{ clOn }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:4px 0">
+<sc-for list="{{ checklist }}" as="k" hint-placeholder-count="4">
+<button onClick="{{ k.toggle }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 16px;min-height:44px;box-sizing:border-box" style-hover="background:#FCFAF6">
+<span style="width:24px;height:24px;flex:none;border-radius:8px;box-sizing:border-box;border:{{ k.boxBd }};background:{{ k.boxBg }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800">{{ k.tick }}</span>
+<span style="flex:1;font-size:14.5px;font-weight:700;color:{{ k.fg }};text-decoration:{{ k.deco }}">{{ k.t }}</span>
+<span style="font-size:11px;font-weight:800;color:#8A8076;white-space:nowrap">{{ k.who }}</span>
+</button>
+</sc-for>
+<div style="display:flex;gap:8px;padding:8px 12px 10px">
+<input value="{{ clText }}" onChange="{{ setClText }}" placeholder="Add something important…" style="all:unset;flex:1;min-width:0;font-family:'Nunito',sans-serif;font-size:14.5px;font-weight:700;background:#F7F2EA;border-radius:14px;padding:11px 14px">
+<button onClick="{{ addCl }}" style="all:unset;cursor:pointer;font-size:14px;font-weight:800;padding:11px 14px;border-radius:14px;background:{{ th.accent }};color:#FFFFFF">Add</button>
+</div>
+</div>
+<sc-if value="{{ hasSuggest }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 2px">
+<span style="font-size:12px;font-weight:800;color:#8A8076;width:100%">Suggested for this trip</span>
+<sc-for list="{{ suggest }}" as="g" hint-placeholder-count="3"><button onClick="{{ g.add }}" style="all:unset;cursor:pointer;font-size:12.5px;font-weight:800;padding:7px 11px;border-radius:12px;background:{{ th.soft }};color:{{ th.ink }}">+ {{ g.t }}</button></sc-for>
+</div>
+</sc-if>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;display:flex"><iframe src="{{ mapSrc }}" title="Travel map" style="border:0;width:100%;height:100%;display:block;background:#FFFCEE"></iframe></div>
+</sc-if>
+<sc-if value="{{ isAlerts }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding:4px 16px 20px;gap:10px">
+<div style="flex:none;display:flex;align-items:center;gap:6px"><button onClick="{{ goUpcoming }}" style="all:unset;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:16px;font-size:22px;font-weight:800" style-hover="background:#F1EBE1">←</button><div><div style="font-size:12.5px;font-weight:700;color:#8A8076">{{ alertsKicker }}</div><div style="font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Alerts</div></div></div>
+<sc-for list="{{ scheduled }}" as="s" hint-placeholder-count="3">
+<div style="flex:none;display:grid;grid-template-columns:62px 1fr;gap:12px;align-items:center;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:10px 14px 10px 10px">
+<span style="height:46px;border-radius:14px;background:{{ th.soft }};color:{{ th.ink }};display:flex;flex-direction:column;align-items:center;justify-content:center"><span style="font-size:10.5px;font-weight:800">{{ s.day }}</span><span style="font:500 13px 'DM Mono',monospace">{{ s.time }}</span></span>
+<span><span style="display:block;font-size:14.5px;font-weight:800">{{ s.title }}</span><span style="display:block;font-size:12.5px;color:#7A7168;margin-top:1px">{{ s.why }}</span></span>
+</div>
+</sc-for>
+<sc-if value="{{ hasHeld }}" hint-placeholder-val="{{ false }}"><div style="flex:none;font-size:12.5px;color:#7A7168;padding:2px 6px">{{ heldText }}</div></sc-if>
+<sc-if value="{{ noScheduled }}" hint-placeholder-val="{{ false }}"><div style="flex:none;font-size:14px;font-weight:700;color:{{ th.ink }};padding:14px 16px;background:{{ th.soft }};border-radius:18px">{{ noAlertsText }}</div></sc-if>
+<button onClick="{{ goSettings }}" style="all:unset;cursor:pointer;flex:none;align-self:flex-start;font-size:13.5px;font-weight:800;color:{{ th.ink }};padding:10px 4px">Change what pings you →</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding:8px 16px 22px;gap:14px">
+<div style="flex:none;padding:0 4px"><div style="font-size:13px;font-weight:700;color:#8A8076">{{ settingsKicker }}</div><div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Settings</div></div>
+
+<button onClick="{{ toggleNotif }}" style="all:unset;cursor:pointer;flex:none;display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:14px 18px">
+<span style="flex:1"><span style="display:block;font-size:15.5px;font-weight:800">Notifications</span><span style="display:block;font-size:12.5px;color:#8A8076">{{ notifHint }}</span></span>
+<span style="width:48px;height:28px;flex:none;border-radius:14px;background:{{ notifTrack }};display:flex;align-items:center;justify-content:{{ notifAlign }};padding:0 3px;box-sizing:border-box"><span style="width:22px;height:22px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.15)"></span></span>
+</button>
+
+<div style="flex:none;display:flex;flex-direction:column;gap:14px;opacity:{{ setOpacity }};pointer-events:{{ setPointer }};transition:opacity .2s">
+<div style="display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:6px 0">
+<div style="font-size:12px;font-weight:800;color:#8A8076;padding:10px 18px 4px;letter-spacing:.04em">WHAT</div>
+<sc-for list="{{ rules }}" as="r" hint-placeholder-count="6">
+<button onClick="{{ r.toggle }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:9px 18px;min-height:46px" style-hover="background:#FCFAF6">
+<span style="flex:1"><span style="display:block;font-size:14.5px;font-weight:700">{{ r.label }}</span><span style="display:block;font-size:12px;color:#8A8076;margin-top:1px">{{ r.hint }}</span></span>
+<span style="width:48px;height:28px;flex:none;border-radius:14px;background:{{ r.track }};display:flex;align-items:center;justify-content:{{ r.align }};padding:0 3px;box-sizing:border-box"><span style="width:22px;height:22px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.15)"></span></span>
+</button>
+</sc-for>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:14px 16px 16px">
+<div style="font-size:12px;font-weight:800;color:#8A8076;letter-spacing:.04em;padding:0 2px">HOW</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+<sc-for list="{{ hows }}" as="h" hint-placeholder-count="3"><button onClick="{{ h.pick }}" style="all:unset;cursor:pointer;text-align:center;display:flex;flex-direction:column;gap:2px;padding:11px 4px;border-radius:14px;background:{{ h.bg }};color:{{ h.fg }}"><span style="font-size:13.5px;font-weight:800">{{ h.label }}</span><span style="font-size:11px;font-weight:700;opacity:.75">{{ h.sub }}</span></button></sc-for>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:14px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:14px 16px 16px">
+<div style="font-size:12px;font-weight:800;color:#8A8076;letter-spacing:.04em;padding:0 2px">WHEN</div>
+<div style="display:flex;flex-direction:column;gap:7px"><span style="font-size:14px;font-weight:700">Flight check-in</span>
+<div style="display:flex;gap:6px"><sc-for list="{{ checkinOpts }}" as="c" hint-placeholder-count="2"><button onClick="{{ c.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;font-size:13px;font-weight:800;padding:9px 6px;border-radius:12px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button></sc-for></div></div>
+<div style="display:flex;flex-direction:column;gap:7px"><span style="font-size:14px;font-weight:700">Unbooked ride, before you need to leave</span>
+<div style="display:flex;gap:6px"><sc-for list="{{ leadOpts }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;font-size:13px;font-weight:800;padding:9px 6px;border-radius:12px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button></sc-for></div></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:700">Quiet hours</span>
+<div style="display:flex;align-items:center;gap:6px">
+<button onClick="{{ qFromDown }}" style="all:unset;cursor:pointer;width:28px;height:28px;border-radius:9px;background:#F1EBE1;text-align:center;line-height:28px;font-weight:800">−</button>
+<span style="font:500 13px 'DM Mono',monospace;min-width:92px;text-align:center">{{ quietText }}</span>
+<button onClick="{{ qFromUp }}" style="all:unset;cursor:pointer;width:28px;height:28px;border-radius:9px;background:#F1EBE1;text-align:center;line-height:28px;font-weight:800">+</button>
+</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:14px;font-weight:700">Max per day</span>
+<div style="display:flex;background:#F1EBE1;border-radius:13px;padding:3px"><sc-for list="{{ caps }}" as="c" hint-placeholder-count="3"><button onClick="{{ c.pick }}" style="all:unset;cursor:pointer;width:36px;text-align:center;font:500 13px 'DM Mono',monospace;padding:6px 0;border-radius:10px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.n }}</button></sc-for></div></div>
+<div style="font-size:12px;color:#8A8076;line-height:1.45">Days you leave unplanned never ping. The duplicate guard only shows inside the app.</div>
+</div>
+</div>
+
+<div style="flex:none;display:flex;align-items:center;gap:12px;background:#FFF1D6;border-radius:22px;padding:14px 14px 14px 16px">
+<span style="width:40px;height:40px;flex:none;border-radius:13px;background:#FFFFFF;color:#93650F;display:flex;align-items:center;justify-content:center;font:500 13px 'DM Mono',monospace">31</span>
+<span style="flex:1;min-width:0"><span style="display:block;font-size:15.5px;font-weight:800">Google Calendar</span><span style="display:block;font-size:12.5px;color:#7A5A1E">{{ gc.sub }}</span></span>
+<button onClick="{{ openGcal }}" style="all:unset;cursor:pointer;flex:none;font-size:13px;font-weight:800;padding:9px 13px;border-radius:12px;background:{{ gc.btnBg }};color:{{ gc.btnFg }};white-space:nowrap">{{ gc.btn }}</button>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:6px 0">
+<div style="font-size:12px;font-weight:800;color:#8A8076;padding:10px 18px 4px;letter-spacing:.04em">ACCOUNT</div>
+<div style="display:flex;align-items:center;gap:12px;padding:11px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Nationality</span><span style="font-size:12.5px;font-weight:800;color:{{ th.ink }}">Spanish · both</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:11px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Travel partner</span><span style="font-size:12.5px;font-weight:800;padding:4px 9px;border-radius:9px;background:#FDEBD3;color:#A0611A">{{ partnerChip }}</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:11px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Payment</span><span style="font-size:12.5px;color:#7A7168">Google Pay</span></div>
+<button onClick="{{ exportBackup }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:11px 18px" style-hover="background:#FCFAF6"><span style="flex:1;font-size:14.5px;font-weight:700">Backup</span><span style="font-size:12.5px;font-weight:800;color:{{ th.ink }}">Export all trips ›</span></button>
+<button onClick="{{ replayWelcome }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:11px 18px" style-hover="background:#FCFAF6"><span style="flex:1;font-size:14.5px;font-weight:700">Welcome screens</span><span style="font-size:12.5px;font-weight:800;color:{{ th.ink }}">Replay ›</span></button>
+<div style="display:flex;align-items:center;gap:12px;padding:11px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Flight tracking</span><span style="font-size:12.5px;color:#7A7168">Flightradar24 · auto</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:11px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Voice language</span><span style="font-size:12.5px;color:#7A7168">Auto · English / Spanish</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:11px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Train tracking</span><span style="font-size:12.5px;color:#7A7168">TrainTracker.live · auto</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:11px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Email access</span><span style="font-size:12.5px;color:#7A7168">None · your inbox stays private</span></div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;padding-bottom:20px">
+<div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:4px 12px">
+<button onClick="{{ goBack }}" style="all:unset;cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:16px;font-size:22px;font-weight:800" style-hover="background:#F1EBE1">←</button>
+<span style="font-size:12px;font-weight:800;letter-spacing:.06em;padding:5px 11px;border-radius:10px;background:{{ d.tileBg }};color:{{ d.tileFg }}">{{ d.kind }}</span>
+<span style="width:44px"></span>
+</div>
+<div style="flex:none;margin:8px 16px 0;background:#FFFFFF;border-radius:28px;border:1.5px solid #F1EBE1;overflow:hidden">
+<div style="padding:20px 20px 18px;display:flex;flex-direction:column;gap:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+<span style="font-size:14px;font-weight:800;color:#5A524A">{{ d.op }}</span>
+<span style="font-size:11.5px;font-weight:800;padding:5px 10px;border-radius:10px;background:{{ d.pillBg }};color:{{ d.pillFg }};white-space:nowrap">{{ d.pill }}</span>
+</div>
+<sc-if value="{{ d.hasRoute }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px">
+<div><div style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1">{{ d.fromCode }}</div><div style="font-size:13px;color:#7A7168;margin-top:4px">{{ d.fromName }}</div></div>
+<span style="width:40px;height:40px;border-radius:50%;background:{{ d.tileBg }};color:{{ d.tileFg }};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px">→</span>
+<div style="text-align:right"><div style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1">{{ d.toCode }}</div><div style="font-size:13px;color:#7A7168;margin-top:4px">{{ d.toName }}</div></div>
+</div>
+<div style="display:flex;justify-content:space-between;font:500 20px 'DM Mono',monospace"><span>{{ d.time }}</span><span style="font-size:12px;color:#8A8076;align-self:center">{{ d.dur }}</span><span>{{ d.arr }}</span></div>
+</sc-if>
+<sc-if value="{{ d.noRoute }}" hint-placeholder-val="{{ false }}">
+<div><div style="font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-.015em;text-wrap:pretty">{{ d.title }}</div><div style="font-size:14px;color:#7A7168;margin-top:6px;line-height:1.4">{{ d.sub }}</div></div>
+</sc-if>
+<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+<span style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em;margin-right:2px">TRAVELLERS</span>
+<sc-for list="{{ d.people }}" as="p" hint-placeholder-count="2"><button onClick="{{ p.toggle }}" style="all:unset;cursor:pointer;font-size:12.5px;font-weight:800;padding:6px 10px;border-radius:11px;background:{{ p.bg }};color:{{ p.fg }};border:{{ p.bd }};white-space:nowrap">{{ p.label }}</button></sc-for>
+</div>
+</div>
+<sc-if value="{{ d.isBooked }}" hint-placeholder-val="{{ true }}">
+<div style="border-top:2px dashed #EDE5D9;margin:0 18px"></div>
+<div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:16px">
+<sc-if value="{{ d.hasFacts }}" hint-placeholder-val="{{ true }}">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px"><sc-for list="{{ d.facts }}" as="f" hint-placeholder-count="4"><div><div style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em">{{ f.k }}</div><div style="font-size:15px;font-weight:700;margin-top:1px">{{ f.v }}</div></div></sc-for></div>
+</sc-if>
+<sc-if value="{{ d.hasRef }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><div style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em">BOOKING REF</div><div style="font:500 20px 'DM Mono',monospace;margin-top:2px">{{ d.ref }}</div></div>
+<button onClick="{{ copyRef }}" style="all:unset;cursor:pointer;font-size:13px;font-weight:800;padding:9px 13px;border-radius:12px;background:#F1EBE1">{{ copyLabel }}</button></div>
+</sc-if>
+<sc-if value="{{ d.hasQr }}" hint-placeholder-val="{{ false }}">
+<button onClick="{{ d.showQr }}" style="all:unset;cursor:pointer;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:{{ th.accent }};color:#FFFFFF" style-hover="background:{{ th.hover }}">Show QR to board</button>
+</sc-if>
+<sc-if value="{{ d.noRefBooked }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:#7A7168;line-height:1.45;background:#F7F2EA;border-radius:14px;padding:12px 14px">Marked as booked. Add the PDF or a screenshot to attach the ticket and QR.</div></sc-if>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{ d.hasDisrupt }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;margin:14px 16px 0;display:flex;flex-direction:column;gap:10px;background:#FCE3DC;border-radius:24px;padding:16px">
+<div style="font-size:12px;font-weight:800;color:#B4472F;letter-spacing:.04em">LIVE · {{ d.dSrc }}</div>
+<div style="font-size:18px;font-weight:800;line-height:1.25;text-wrap:pretty">{{ d.dTitle }}</div>
+<div style="font-size:13px;color:#8E3F2A;line-height:1.45">{{ d.dSub }}</div>
+<sc-for list="{{ d.dOpts }}" as="o" hint-placeholder-count="3">
+<button onClick="{{ o.go }}" style="all:unset;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:#FFFFFF;border-radius:16px;padding:11px 12px 11px 14px">
+<span style="min-width:0"><span style="display:block;font-size:14.5px;font-weight:800">{{ o.name }}</span><span style="display:block;font-size:12px;color:#7A7168">{{ o.note }}</span></span>
+<span style="font-size:12.5px;font-weight:800;padding:8px 11px;border-radius:12px;background:{{ o.bg }};color:{{ o.fg }};white-space:nowrap">{{ o.btn }}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ d.hasFr }}" hint-placeholder-val="{{ false }}">
+<a href="{{ d.frUrl }}" target="_blank" rel="noopener" style="flex:none;margin:12px 16px 0;display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:12px 14px;color:#2A2622">
+<span style="width:42px;height:42px;flex:none;border-radius:13px;background:#E6EEFB;color:#3C5FA8;display:flex;align-items:center;justify-content:center;font:500 11px 'DM Mono',monospace">{{ d.trBadge }}</span>
+<span style="flex:1;min-width:0"><span style="display:block;font-size:14.5px;font-weight:800">{{ d.trName }}</span><span style="display:block;font-size:12px;color:#7A7168">{{ d.frSub }}</span></span>
+<span style="font-size:18px;font-weight:800;color:{{ th.ink }}">↗</span>
+</a>
+</sc-if>
+<sc-if value="{{ d.isPending }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;margin:16px 16px 0;display:flex;flex-direction:column;gap:8px">
+<div style="font-size:12px;font-weight:800;color:#8A8076;letter-spacing:.04em;padding:0 6px">{{ d.optTitle }}</div>
+<sc-for list="{{ d.options }}" as="op" hint-placeholder-count="3">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:#FFFFFF;border:{{ op.bd }};border-radius:18px;padding:12px 10px 12px 14px;opacity:{{ op.op }}">
+<span style="min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="display:flex;align-items:center;gap:6px;min-width:0"><span style="font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ op.name }}</span><sc-if value="{{ op.best }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-size:10px;font-weight:800;padding:2px 6px;border-radius:6px;background:{{ th.soft }};color:{{ th.ink }}">BEST FIT</span></sc-if></span>
+<span style="font-size:12px;color:#7A7168;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ op.note }}</span>
+<span style="font:500 12px 'DM Mono',monospace;color:#5A524A">{{ op.dur }} · {{ op.price }}</span>
+</span>
+<button onClick="{{ op.go }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 12px;border-radius:12px;background:{{ op.btnBg }};color:{{ op.btnFg }}"><span style="font-size:12.5px;font-weight:800;white-space:nowrap">{{ op.btn }}</span><span style="font-size:9.5px;font-weight:800;opacity:.8;white-space:nowrap">{{ op.btnSub }}</span></button>
+</div>
+</sc-for>
+<button onClick="{{ markBooked }}" style="all:unset;cursor:pointer;text-align:center;font-size:14.5px;font-weight:800;padding:14px;border-radius:18px;background:#F1EBE1;margin-top:4px" style-hover="background:#EAE2D5">I've booked it elsewhere</button>
+<button onClick="{{ leaveDay }}" style="all:unset;cursor:pointer;text-align:center;font-size:13.5px;font-weight:800;padding:8px;color:#8A8076">{{ d.leaveLabel }}</button>
+</div>
+</sc-if>
+<div style="flex:none;margin:14px 22px 0;font-size:13px;color:#7A7168;line-height:1.5">{{ d.footer }}</div>
+<sc-if value="{{ d.hasHist }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;margin:14px 16px 0;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+<span style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em">CHANGES · SYNCED TO BOTH PHONES</span>
+<sc-for list="{{ d.hist }}" as="h" hint-placeholder-count="2"><div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;line-height:1.4"><span style="font-weight:700">{{ h.line }}</span><span style="flex:none;color:#8A8076;font-weight:700;white-space:nowrap">{{ h.when }}</span></div></sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ d.hasNudge }}" hint-placeholder-val="{{ false }}"><div style="flex:none;margin:12px 16px 0;font-size:13px;font-weight:700;color:{{ th.ink }};background:{{ th.soft }};border-radius:16px;padding:12px 14px">{{ d.nudgeLong }}</div></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ showNav }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;height:76px;display:grid;grid-template-columns:1fr 1fr 72px 1fr 1fr;align-items:center;background:#FFFFFF;border-top:1.5px solid #F1EBE1;padding:0 4px">
+<sc-for list="{{ navL }}" as="n" hint-placeholder-count="2">
+<button onClick="{{ n.go }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;height:58px;justify-content:center">
+<span style="width:52px;height:28px;border-radius:14px;background:{{ n.bg }};display:flex;align-items:center;justify-content:center;font:500 12px 'DM Mono',monospace;color:{{ n.fg }}">{{ n.glyph }}</span>
+<span style="font-size:11.5px;font-weight:800">{{ n.label }}</span></button>
+</sc-for>
+<button onClick="{{ openAdd }}" style="all:unset;cursor:pointer;justify-self:center;width:58px;height:58px;border-radius:21px;background:{{ th.accent }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:600;box-shadow:0 10px 20px -8px {{ th.glow }}" style-hover="background:{{ th.hover }}">+</button>
+<sc-for list="{{ navR }}" as="n" hint-placeholder-count="2">
+<button onClick="{{ n.go }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;height:58px;justify-content:center">
+<span style="position:relative;width:52px;height:28px;border-radius:14px;background:{{ n.bg }};display:flex;align-items:center;justify-content:center;font:500 12px 'DM Mono',monospace;color:{{ n.fg }}">{{ n.glyph }}<sc-if value="{{ n.hasBadge }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:-3px;right:6px;min-width:17px;height:17px;border-radius:9px;background:#E8664A;color:#fff;font:800 10.5px 'Nunito',sans-serif;display:flex;align-items:center;justify-content:center;border:2px solid #fff">{{ n.badge }}</span></sc-if></span>
+<span style="font-size:11.5px;font-weight:800">{{ n.label }}</span></button>
+</sc-for>
+</div>
+</sc-if>
+<div style="flex:none;height:22px;display:{{ fr.sbar }};align-items:center;justify-content:center;background:{{ gestureBg }}"><span style="width:110px;height:4px;border-radius:2px;background:#2A2622;opacity:.8"></span></div>
+
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:20px;right:20px;bottom:112px;z-index:7;background:#2A2622;color:#FFFFFF;border-radius:16px;padding:13px 16px;font-size:14px;font-weight:700;box-shadow:0 10px 24px -10px rgba(0,0,0,.4);display:flex;align-items:center;gap:12px"><span style="flex:1">{{ toast }}</span><sc-if value="{{ toastUndo }}" hint-placeholder-val="{{ false }}"><button onClick="{{ doUndo }}" style="all:unset;cursor:pointer;flex:none;font-size:14px;font-weight:800;color:#FFE07A;padding:4px 6px">Undo</button></sc-if></div>
+</sc-if>
+
+<sc-if value="{{ obOn }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:9;background:{{ th.bg }};display:flex;flex-direction:column;padding:52px 24px 30px;box-sizing:border-box;gap:18px">
+<div style="flex:none;display:flex;gap:6px"><sc-for list="{{ obDots }}" as="o" hint-placeholder-count="3"><span style="height:8px;width:{{ o.w }};border-radius:4px;background:{{ o.bg }};transition:width .2s"></span></sc-for></div>
+<sc-if value="{{ ob0 }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center">
+<img src="icon-512.png" alt="Andando! icon" style="width:132px;height:132px;border-radius:34px;box-shadow:0 18px 36px -14px rgba(194,54,111,.45)">
+<div style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1">Andando!</div>
+<div style="font-size:16px;color:#5A524A;line-height:1.45;max-width:270px;text-wrap:pretty">Every ticket, ride and bed for the two of you, in one place. Just say it or drop in a PDF.</div>
+</div>
+<button onClick="{{ obGoogle }}" style="all:unset;cursor:pointer;flex:none;display:flex;align-items:center;justify-content:center;gap:10px;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:#FFFFFF;border:1.5px solid #E2D9CB">
+<span style="width:24px;height:24px;border-radius:50%;background:#F1EBE1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#3C5FA8">G</span>Continue with Google</button>
+<div style="flex:none;font-size:12px;color:#8A8076;text-align:center;line-height:1.45">Only to sign in and sync with Maria. Andando! never reads your email.</div>
+</sc-if>
+<sc-if value="{{ ob1 }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none"><div style="font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Link with your travel partner</div><div style="font-size:14.5px;color:#5A524A;line-height:1.45;margin-top:8px;text-wrap:pretty">Shared trips appear on both phones and stay in sync. Solo plans stay private.</div></div>
+<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:14px">
+<span style="width:76px;height:76px;border-radius:26px;background:{{ th.soft }};color:{{ th.ink }};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800">You</span>
+<span style="font-size:22px;font-weight:800;color:{{ obLinkFg }}">{{ obLinkGlyph }}</span>
+<span style="width:76px;height:76px;border-radius:26px;background:{{ obMariaBg }};color:{{ obMariaFg }};border:{{ obMariaBd }};box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">Maria</span>
+</div>
+<button onClick="{{ obInviteGo }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:{{ obInviteBg }};color:#FFFFFF">{{ obInviteLabel }}</button>
+<button onClick="{{ obNext1 }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:13.5px;font-weight:800;padding:6px;color:#8A8076">{{ obNext1Label }}</button>
+</sc-if>
+<sc-if value="{{ ob2 }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none"><div style="font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Pick your shared calendar</div><div style="font-size:14.5px;color:#5A524A;line-height:1.45;margin-top:8px;text-wrap:pretty">Andando! takes only trips and events from it. Everything else stays in Google.</div></div>
+<div style="flex:none;display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:4px 0">
+<sc-for list="{{ obCals }}" as="c" hint-placeholder-count="3">
+<button onClick="{{ c.pick }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:12px 16px;min-height:48px;box-sizing:border-box" style-hover="background:#FCFAF6">
+<span style="width:12px;height:12px;flex:none;border-radius:50%;background:{{ c.dot }}"></span>
+<span style="flex:1"><span style="display:block;font-size:15px;font-weight:800">{{ c.name }}</span><span style="display:block;font-size:12px;color:#7A7168">{{ c.sub }}</span></span>
+<span style="width:22px;height:22px;flex:none;border-radius:50%;box-sizing:border-box;border:{{ c.bd }};background:#FFFFFF;display:flex;align-items:center;justify-content:center"><span style="width:12px;height:12px;border-radius:50%;background:{{ c.fill }}"></span></span>
+</button>
+</sc-for>
+</div>
+<div style="flex:1"></div>
+<button onClick="{{ obFinish }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:{{ th.accent }};color:#FFFFFF">Finish</button>
+<button onClick="{{ obSkip }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:13.5px;font-weight:800;padding:6px;color:#8A8076">Skip for now</button>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{ hasStory }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(42,38,34,.5)">
+<div style="width:100%;background:#FFFFFF;border-radius:30px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 50px -20px rgba(0,0,0,.5)">
+<div style="position:relative;height:150px;background:repeating-linear-gradient(45deg,#E9F3E2 0 8px,#F5FAF1 8px 16px);display:flex;align-items:flex-end;padding:12px 14px">
+<span style="position:absolute;top:12px;left:12px;font-size:11px;font-weight:800;letter-spacing:.06em;padding:5px 10px;border-radius:10px;background:{{ th.soft }};color:{{ th.ink }}">NEW COUNTRY · #{{ storyN }}</span>
+<span style="font:500 10.5px 'DM Mono',monospace;color:#4E7A2C">photo · Batad rice terraces</span>
+</div>
+<div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:12px">
+<div><div style="font-size:12px;font-weight:800;color:#8A8076;letter-spacing:.05em">MABUHAY · WELCOME TO THE PHILIPPINES</div>
+<div style="font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.15;margin-top:4px;text-wrap:pretty">7,641 islands, and counting</div></div>
+<div style="font-size:14.5px;line-height:1.5;color:#3E3832;text-wrap:pretty">Some only appear at low tide. And Filipinos start Christmas in September, the longest Christmas season on Earth.</div>
+<div style="background:{{ th.soft }};border-radius:18px;padding:12px 14px;display:flex;flex-direction:column;gap:3px">
+<span style="font-size:11px;font-weight:800;letter-spacing:.06em;color:{{ th.ink }}">GO SEE</span>
+<span style="font-size:16px;font-weight:800;color:{{ th.ink }}">Batad Rice Terraces, Ifugao</span>
+<span style="font-size:12.5px;line-height:1.45;color:{{ th.ink }}">A mountain amphitheatre of terraces carved by hand. UNESCO-listed. Jeepney, then a 1 h hike.</span>
+</div>
+<div style="display:flex;gap:8px">
+<button onClick="{{ saveStory }}" style="all:unset;cursor:pointer;flex:1;text-align:center;font-size:14.5px;font-weight:800;padding:14px;border-radius:16px;background:{{ th.accent }};color:#FFFFFF">Save the place</button>
+<button onClick="{{ closeStory }}" style="all:unset;cursor:pointer;text-align:center;font-size:14.5px;font-weight:800;padding:14px 18px;border-radius:16px;background:#F1EBE1">Close</button>
+</div>
+<div style="font-size:12px;font-weight:700;color:#8A8076;text-align:center">Philippines added to your map ✓</div>
+</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ hasTicket }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:6;background:#FFFFFF;display:flex;flex-direction:column;padding:44px 20px 30px;gap:16px;box-sizing:border-box">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<button onClick="{{ closeTicket }}" style="all:unset;cursor:pointer;width:44px;height:44px;border-radius:16px;background:#F1EBE1;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800">✕</button>
+<span style="white-space:nowrap;font-size:12px;font-weight:800;padding:6px 11px;border-radius:10px;background:{{ tk.tileBg }};color:{{ tk.tileFg }};letter-spacing:.05em">{{ tk.kind }} · OFFLINE</span>
+</div>
+<div><div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1">{{ tk.route }}</div><div style="font-size:14px;color:#7A7168;margin-top:4px">{{ tk.sub }}</div></div>
+<div style="display:flex;background:#F1EBE1;border-radius:16px;padding:4px">
+<sc-for list="{{ tk.paxTabs }}" as="p" hint-placeholder-count="2"><button onClick="{{ p.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;font-size:14px;font-weight:800;padding:10px;border-radius:12px;background:{{ p.bg }};box-shadow:{{ p.sh }}">{{ p.label }}</button></sc-for>
+</div>
+<div style="align-self:center;position:relative;width:250px;height:250px;border-radius:18px;background:repeating-linear-gradient(45deg,#F4F1EC 0 6px,#FFFFFF 6px 12px);border:1.5px solid #E7E1D7;box-sizing:border-box">
+<span style="position:absolute;left:18px;top:18px;width:48px;height:48px;border:9px solid #2A2622;box-sizing:border-box;border-radius:6px"></span>
+<span style="position:absolute;right:18px;top:18px;width:48px;height:48px;border:9px solid #2A2622;box-sizing:border-box;border-radius:6px"></span>
+<span style="position:absolute;left:18px;bottom:18px;width:48px;height:48px;border:9px solid #2A2622;box-sizing:border-box;border-radius:6px"></span>
+<span style="position:absolute;left:0;right:0;top:50%;margin-top:-16px;text-align:center;white-space:pre-line;font:500 10.5px/1.5 'DM Mono',monospace;color:#7A7168">{{ tk.qrLabel }}</span>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;background:#FBF8F3;border-radius:18px;padding:14px 16px">
+<div><div style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em">PASSENGER</div><div style="font-size:15px;font-weight:800;margin-top:1px">{{ tk.paxName }}</div></div>
+<div><div style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em">SEAT</div><div style="font-size:15px;font-weight:800;margin-top:1px">{{ tk.seat }}</div></div>
+<div><div style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em">REF</div><div style="font:500 15px 'DM Mono',monospace;margin-top:1px">{{ tk.ref }}</div></div>
+<div><div style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em">DEPARTS</div><div style="font:500 15px 'DM Mono',monospace;margin-top:1px">{{ tk.time }}</div></div>
+</div>
+<div style="margin-top:auto;text-align:center;font-size:12.5px;font-weight:700;color:#8A8076">Brightness boosted · works with no signal</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasSheet }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;z-index:5">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(42,38,34,.4)"></div>
+<div style="position:relative;background:{{ th.bg }};border-radius:32px 32px 0 0;padding:10px 18px 34px;display:flex;flex-direction:column;gap:14px;max-height:86%;overflow-y:auto;box-sizing:border-box">
+<div style="flex:none;align-self:center;width:38px;height:5px;border-radius:3px;background:#DDD3C4"></div>
+
+<sc-if value="{{ sheetCheckout }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ coReview }}" hint-placeholder-val="{{ true }}">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.01em;padding:2px 2px 0">Book in Andando!</div>
+<div style="flex:none;display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:center;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:9px">
+<span style="width:58px;height:58px;border-radius:17px;background:{{ co.tileBg }};color:{{ co.tileFg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font:500 14px 'DM Mono',monospace">{{ co.dep }}</span><span style="font-size:9px;font-weight:800">{{ co.kind }}</span></span>
+<span style="min-width:0"><span style="display:block;font-size:15.5px;font-weight:800">{{ co.route }}</span><span style="display:block;font-size:12.5px;color:#7A7168">{{ co.sub }}</span></span>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:4px 0">
+<sc-for list="{{ co.pax }}" as="p" hint-placeholder-count="2">
+<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 16px;gap:10px"><span><span style="display:block;font-size:14.5px;font-weight:800">{{ p.name }}</span><span style="display:block;font-size:12px;color:#7A7168">Passport saved · details filled</span></span><span style="font:500 13px 'DM Mono',monospace">{{ p.price }}</span></div>
+</sc-for>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1.5px solid #F7F2EA"><span style="font-size:14.5px;font-weight:800">Total</span><span style="font:500 17px 'DM Mono',monospace">{{ co.total }}</span></div>
+</div>
+<div style="flex:none;font-size:12px;color:#8A8076;line-height:1.45;padding:0 2px">Sold by {{ co.seller }} through Andando!'s booking partner. Tickets and QR codes go straight to both phones.</div>
+<button onClick="{{ payNow }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:#2A2622;color:#FFFFFF">Pay with Google Pay · {{ co.total }}</button>
+</sc-if>
+<sc-if value="{{ coPaying }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:14px;padding:30px 4px">{{ spinner }}<span style="font-size:15px;font-weight:700;color:#5A524A">Confirming with {{ co.seller }}…</span></div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ sheetAdd }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.01em;padding:2px 2px 0">Add to {{ addDayLabel }}</div>
+<button onClick="{{ openVoice }}" style="all:unset;cursor:pointer;flex:none;display:flex;align-items:center;gap:14px;background:{{ th.accent }};color:#FFFFFF;border-radius:24px;padding:16px" style-hover="background:{{ th.hover }}">
+<span style="width:48px;height:48px;flex:none;border-radius:18px;background:#FFFFFF;display:flex;align-items:center;justify-content:center"><span style="width:12px;height:20px;border-radius:6px;background:{{ th.accent }}"></span></span>
+<span><span style="display:block;font-size:17px;font-weight:800">Say it</span><span style="display:block;font-size:13px;opacity:.85;margin-top:1px">English or Spanish, detected for you</span></span></button>
+<div style="flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<button onClick="{{ openPdf }}" style="all:unset;cursor:pointer;background:#E6EEFB;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:92px;box-sizing:border-box" style-hover="background:#DCE6F8"><span style="font-size:12px;font-weight:800;color:#3C5FA8">PDF</span><span style="font-size:15px;font-weight:800;line-height:1.25">Ticket or booking</span></button>
+<button onClick="{{ openShot }}" style="all:unset;cursor:pointer;background:#FFF1D6;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:92px;box-sizing:border-box" style-hover="background:#FCE9C4"><span style="font-size:12px;font-weight:800;color:#93650F">IMAGE</span><span style="font-size:15px;font-weight:800;line-height:1.25">Screenshot</span></button>
+</div>
+<button onClick="{{ openManual }}" style="all:unset;cursor:pointer;flex:none;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:15px 18px;display:flex;justify-content:space-between;align-items:center" style-hover="background:#FCFAF6"><span style="font-size:15px;font-weight:800">Quick plan</span><span style="font-size:13px;color:#8A8076">not booked yet</span></button>
+</sc-if>
+
+<sc-if value="{{ sheetVoice }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ voiceListening }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;align-items:center;gap:20px;padding:16px 0 8px">
+<div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:800;color:#8A8076">{{ listenLabel }}</span><sc-if value="{{ hasLang }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:9px;background:{{ th.soft }};color:{{ th.ink }}">{{ langChip }}</span></sc-if></div>
+<div style="position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center">{{ pulse }}<span style="position:relative;width:80px;height:80px;border-radius:30px;background:{{ th.accent }};display:flex;align-items:center;justify-content:center">{{ bars }}</span></div>
+<div style="font-size:20px;line-height:1.35;font-weight:700;text-align:center;max-width:290px;min-height:54px;text-wrap:pretty">{{ transcript }}</div>
+</div>
+</sc-if>
+<sc-if value="{{ voiceParsed }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:8px;padding:4px 2px 0"><span style="font-size:13px;font-weight:800;color:#8A8076">Andando! heard</span><span style="font-size:11.5px;font-weight:800;padding:3px 9px;border-radius:9px;background:{{ th.soft }};color:{{ th.ink }}">{{ langChip }}</span></div>
+<div style="font-size:15px;font-weight:700;color:#5A524A;padding:0 2px">{{ transcript }}</div>
+<div style="flex:none;display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:center;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:9px">
+<span style="width:58px;height:58px;border-radius:17px;background:#FFF1D6;color:#93650F;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font:500 14px 'DM Mono',monospace">~14:00</span><span style="font-size:9px;font-weight:800">TRAIN</span></span>
+<span><span style="display:block;font-size:15.5px;font-weight:800">Porto → Lisboa</span><span style="display:block;font-size:12.5px;color:#7A7168">Today · around 14:00</span></span>
+</div>
+<div style="flex:none;background:#FCE3DC;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:6px">
+<div style="font-size:12px;font-weight:800;color:#B4472F;letter-spacing:.04em">WAIT, ALREADY BOOKED</div>
+<div style="font-size:16px;font-weight:800;line-height:1.35;text-wrap:pretty">{{ dupText }}</div>
+<div style="font:500 12.5px 'DM Mono',monospace;color:#8E3F2A">ref 7XK2PL · no need to buy again</div>
+</div>
+<div style="flex:none;display:flex;gap:10px">
+<button onClick="{{ openExisting }}" style="all:unset;cursor:pointer;flex:1;text-align:center;font-size:15px;font-weight:800;padding:15px;border-radius:18px;background:{{ th.accent }};color:#FFFFFF" style-hover="background:{{ th.hover }}">Show the ticket</button>
+<button onClick="{{ closeSheet }}" style="all:unset;cursor:pointer;text-align:center;font-size:14.5px;font-weight:800;padding:15px 18px;border-radius:18px;background:#F1EBE1">Dismiss</button>
+</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ sheetShot }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.01em;padding:2px 2px 0">{{ shotTitle }}</div>
+<sc-if value="{{ shotPick }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+<button onClick="{{ pickShot }}" style="all:unset;cursor:pointer;aspect-ratio:3/5;border-radius:16px;background:repeating-linear-gradient(45deg,#F1EBE1 0 6px,#F9F5EF 6px 12px);border:3px solid {{ th.accent }};display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font:500 9.5px/1.35 'DM Mono',monospace;color:#5A524A">ferry booking<br>screenshot</button>
+<div style="aspect-ratio:3/5;border-radius:16px;background:repeating-linear-gradient(45deg,#F1EBE1 0 6px,#F9F5EF 6px 12px);display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font:500 9.5px/1.35 'DM Mono',monospace;color:#A39888">photo</div>
+<div style="aspect-ratio:3/5;border-radius:16px;background:repeating-linear-gradient(45deg,#F1EBE1 0 6px,#F9F5EF 6px 12px);display:flex;align-items:flex-end;padding:8px;box-sizing:border-box;font:500 9.5px/1.35 'DM Mono',monospace;color:#A39888">ticket.pdf</div>
+</div>
+<div style="font-size:13px;color:#8A8076;padding:0 2px">Or share straight from any app → Andando!.</div>
+</sc-if>
+<sc-if value="{{ shotReading }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:14px;padding:22px 4px">{{ spinner }}<span style="font-size:15px;font-weight:700;color:#5A524A">Reading dates, places, ref and QR codes…</span></div>
+</sc-if>
+<sc-if value="{{ shotDone }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:center;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:9px">
+<span style="width:58px;height:58px;border-radius:17px;background:#DDF1F3;color:#1D7480;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px"><span style="font:500 14px 'DM Mono',monospace">08:00</span><span style="font-size:9px;font-weight:800">FERRY</span></span>
+<span><span style="display:block;font-size:15.5px;font-weight:800">Barcelona → Ibiza</span><span style="display:block;font-size:12.5px;color:#7A7168">Sat 17 Oct · ref BAL-55190 · 2 QR codes</span></span>
+</div>
+<div style="flex:none;font-size:13.5px;color:{{ th.ink }};font-weight:700;background:{{ th.soft }};border-radius:16px;padding:12px 14px">Matches your Saturday "Barcelona → Ibiza" plan. Andando! will mark it as booked.</div>
+<button onClick="{{ confirmShot }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:{{ th.accent }};color:#FFFFFF" style-hover="background:{{ th.hover }}">Add to Saturday</button>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{ sheetGcal }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ gcPick }}" hint-placeholder-val="{{ true }}">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.01em;padding:2px 2px 0">Connect Google Calendar</div>
+<div style="font-size:13.5px;color:#7A7168;line-height:1.45;padding:0 2px">Pick the calendars to watch. Andando! only takes trips, transport, stays and events. Everything else is ignored.</div>
+<div style="flex:none;display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:4px 0">
+<sc-for list="{{ gcCals }}" as="c" hint-placeholder-count="4">
+<button onClick="{{ c.toggle }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:10px 16px;min-height:46px;box-sizing:border-box" style-hover="background:#FCFAF6">
+<span style="width:12px;height:12px;flex:none;border-radius:50%;background:{{ c.dot }}"></span>
+<span style="flex:1;min-width:0"><span style="display:block;font-size:14.5px;font-weight:800">{{ c.name }}</span><span style="display:block;font-size:12px;color:#7A7168">{{ c.sub }}</span></span>
+<span style="width:24px;height:24px;flex:none;border-radius:8px;box-sizing:border-box;border:{{ c.bd }};background:{{ c.bg }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800">{{ c.tick }}</span>
+</button>
+</sc-for>
+</div>
+<button onClick="{{ toggleGcBack }}" style="all:unset;cursor:pointer;flex:none;display:flex;align-items:center;gap:12px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:12px 16px">
+<span style="flex:1"><span style="display:block;font-size:14.5px;font-weight:800">Also show Andando! plans in Google</span><span style="display:block;font-size:12px;color:#7A7168">Adds a read-only "Andando!" calendar</span></span>
+<span style="width:48px;height:28px;flex:none;border-radius:14px;background:{{ gcBackTrack }};display:flex;align-items:center;justify-content:{{ gcBackAlign }};padding:0 3px;box-sizing:border-box"><span style="width:22px;height:22px;border-radius:50%;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.15)"></span></span>
+</button>
+<button onClick="{{ allowGcal }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:{{ gcAllowBg }};color:#FFFFFF">Connect with Google</button>
+<button onClick="{{ gcNotNow }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:13.5px;font-weight:800;padding:6px;color:#8A8076">Not now</button>
+</sc-if>
+<sc-if value="{{ gcScanning }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;gap:14px;padding:30px 4px">{{ spinner }}<span style="font-size:15px;font-weight:700;color:#5A524A">Reading the next 60 days…</span></div>
+</sc-if>
+<sc-if value="{{ gcDone }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.01em;padding:2px 2px 0">Calendar connected</div>
+<div style="flex:none;display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:4px 0">
+<sc-for list="{{ gcFound }}" as="x" hint-placeholder-count="4"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px"><span style="min-width:0"><span style="display:block;font-size:14.5px;font-weight:800">{{ x.t }}</span><span style="display:block;font-size:12px;color:#7A7168">{{ x.s }}</span></span><span style="font-size:11.5px;font-weight:800;padding:4px 9px;border-radius:9px;background:{{ x.bg }};color:{{ x.fg }};white-space:nowrap">{{ x.b }}</span></div></sc-for>
+</div>
+<div style="flex:none;font-size:13px;color:#7A7168;line-height:1.45;padding:0 2px">New or moved events in these calendars sync within a few minutes. Delete one in Google and Andando! asks before removing it.</div>
+<button onClick="{{ finishGcal }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:{{ th.accent }};color:#FFFFFF">See Monday</button>
+</sc-if>
+</sc-if>
+<sc-if value="{{ sheetTheme }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.01em;padding:2px 2px 0">Trip theme</div>
+<div style="font-size:13.5px;color:#7A7168;line-height:1.45;padding:0 2px">Each shared trip can have its own palette and artwork. It syncs to both phones.</div>
+<div style="flex:none;display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ themes }}" as="t" hint-placeholder-count="5">
+<button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;background:{{ t.d }};border:{{ t.ring }};border-radius:20px;padding:10px 14px 10px 10px">
+<span style="width:46px;height:46px;flex:none;border-radius:14px;background:repeating-linear-gradient(45deg,{{ t.b }} 0 5px,#FFFFFF 5px 10px);display:flex;align-items:center;justify-content:center;text-align:center;font:500 7.5px/1.15 'DM Mono',monospace;color:#7A7168;padding:2px;box-sizing:border-box">{{ t.motif }}</span>
+<span style="flex:1"><span style="display:block;font-size:15px;font-weight:800">{{ t.name }}</span><span style="display:block;font-size:12px;color:#7A7168">{{ t.sub }}</span></span>
+<span style="display:flex;gap:4px"><span style="width:18px;height:18px;border-radius:50%;background:{{ t.a }}"></span><span style="width:18px;height:18px;border-radius:50%;background:{{ t.b }};border:1px solid rgba(0,0,0,.06)"></span><span style="width:18px;height:18px;border-radius:50%;background:{{ t.c }};border:1px solid rgba(0,0,0,.06)"></span></span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ sheetManual }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.01em;padding:2px 2px 0">Quick plan</div>
+<div style="flex:none;display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ types }}" as="t" hint-placeholder-count="6"><button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;font-size:14px;font-weight:800;padding:9px 14px;border-radius:14px;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button></sc-for>
+</div>
+<input value="{{ manualTo }}" onChange="{{ setManualTo }}" placeholder="{{ manualPh }}" style="all:unset;flex:none;font-family:'Nunito',sans-serif;font-size:17px;font-weight:700;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:18px;padding:15px 16px">
+<div style="flex:none;display:flex;gap:6px;overflow-x:auto">
+<sc-for list="{{ dayChips }}" as="c" hint-placeholder-count="7"><button onClick="{{ c.pick }}" style="all:unset;cursor:pointer;flex:none;font-size:13.5px;font-weight:800;padding:9px 12px;border-radius:13px;background:{{ c.bg }};color:{{ c.fg }}">{{ c.label }}</button></sc-for>
+</div>
+<button onClick="{{ toggleMWith }}" style="all:unset;cursor:pointer;flex:none;display:flex;align-items:center;gap:10px;padding:4px 2px">
+<span style="width:24px;height:24px;border-radius:8px;box-sizing:border-box;border:{{ mWithBd }};background:{{ mWithBg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800">{{ mWithTick }}</span>
+<span style="font-size:14px;font-weight:800">{{ mWithLabel }}</span>
+</button>
+<sc-if value="{{ manualDup }}" hint-placeholder-val="{{ false }}"><div style="flex:none;font-size:13.5px;font-weight:700;color:#8E3F2A;background:#FCE3DC;border-radius:16px;padding:12px 14px">Heads up: there's already a train to Lisboa today (ref 7XK2PL).</div></sc-if>
+<button onClick="{{ addManual }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:{{ addBg }};color:#FFFFFF">Add as not booked</button>
+</sc-if>
+
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showWelcome&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;First launch&quot;},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;brasil&quot;,&quot;mauritius&quot;,&quot;pastel&quot;,&quot;azulejo&quot;,&quot;sunset&quot;],&quot;default&quot;:&quot;brasil&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mapStyle&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;d&quot;,&quot;a&quot;,&quot;b&quot;,&quot;c&quot;],&quot;default&quot;:&quot;d&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Map tab: d globe+journal · a scratch · b globe · c journal&quot;},&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;upcoming&quot;,&quot;tickets&quot;,&quot;trip&quot;,&quot;map&quot;,&quot;alerts&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;upcoming&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;yourName&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Partner&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;How Maria's view names you&quot;},&quot;showIntro&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;}}">
+const T = {
+  flight:{bg:'#E6EEFB',fg:'#3C5FA8',k:'FLIGHT'},
+  train:{bg:'#FFF1D6',fg:'#93650F',k:'TRAIN'},
+  bus:{bg:'#FCE8EF',fg:'#A8466A',k:'BUS'},
+  ferry:{bg:'#DDF1F3',fg:'#1D7480',k:'FERRY'},
+  ride:{bg:'#E9F3E2',fg:'#4E7A2C',k:'TRANSFER'},
+  leg:{bg:'#ECE7FB',fg:'#5B4FA8',k:'TRAVEL'},
+  stay:{bg:'#EEE7FA',fg:'#6A4FA8',k:'STAY'},
+  checkout:{bg:'#EEE7FA',fg:'#6A4FA8',k:'CHECKOUT'},
+  doc:{bg:'#FDEFD9',fg:'#9A5B12',k:'ENTRY'},
+  gap:{bg:'#FCE3DC',fg:'#C2502F',k:'BED'},
+  event:{bg:'#FDE3EE',fg:'#A33A6B',k:'EVENT'}
+};
+const DAYS = [
+  {dow:'Wed',num:14,title:'Today',city:'Porto → Lisboa'},
+  {dow:'Thu',num:15,title:'Tomorrow',city:'Lisboa'},
+  {dow:'Fri',num:16,title:'Friday',city:'Lisboa → Barcelona'},
+  {dow:'Sat',num:17,title:'Saturday',city:'Barcelona → Ibiza'},
+  {dow:'Sun',num:18,title:'Sunday',city:'Ibiza'},
+  {dow:'Mon',num:19,title:'Monday',city:'Ibiza'},
+  {dow:'Tue',num:20,title:'Tuesday',city:'Ibiza → Manila'}
+];
+const B = ['me','maria'];
+const O = (n,note,dur,price,btn,x={}) => ({n,note,dur,price,btn,...x});
+const SEED = [
+  {id:1,day:0,time:'11:00',type:'checkout',title:'Leave Casa Ribeira',sub:'Airbnb · keys in the lockbox',status:'booked',who:B,by:'maria',op:'Airbnb',ref:'HM4KQ9ZX',via:'PDF',facts:[['HOST','Inês'],['CHECKOUT','11:00'],['ADDRESS','R. da Reboleira 7'],['LOCKBOX','4471']]},
+  {id:2,day:0,time:'13:20',type:'ride',title:'Get to Campanhã',sub:'Train at 14:09 · 4 km',status:'tobook',who:B,op:'Casa Ribeira → Campanhã',
+    options:[O('Metro · Line F','Stop 3 min walk · every 6 min','22 min','€1.65','Route',{best:1,sub:'Maps'}),O('Uber','Pickup + drop-off pre-filled','12 min','~€9','Open',{sub:'Uber app'}),O('Bolt','Pickup + drop-off pre-filled','12 min','~€8','Open',{sub:'Bolt app'}),O('Walk','Mostly downhill','48 min','free','Route',{sub:'Maps'})]},
+  {id:3,day:0,time:'14:09',type:'train',title:'Porto → Lisboa',sub:'Alfa Pendular 133 · car 4',status:'booked',who:B,by:'maria',op:'CP · Comboios de Portugal',ref:'7XK2PL',via:'PDF, 18 Sep',route:['PCA','Campanhã','LSA','Sta Apolónia','17:01','2h 52m'],facts:[['CAR','4'],['SEATS','41 · 42'],['CLASS','Turística'],['PLATFORM','Shown 15 min before']],qr:true,pax:[['me','Car 4 · 41'],['maria','Car 4 · 42']],qrSrc:'CP ticket PDF',hist:[{k:'maria',t:'added it from a PDF',when:'18 Sep'}]},
+  {id:4,day:0,time:'NIGHT',type:'stay',title:'Alfama Loft',sub:'Booking.com · 2 nights · from 15:00',status:'booked',who:B,by:'me',op:'Booking.com',ref:'4021 883 196',via:'screenshot',facts:[['CHECK-IN','From 15:00'],['CHECKOUT','Fri 11:00'],['ADDRESS','R. de São Miguel 12'],['DOOR CODE','Sent on the day']]},
+  {id:14,day:1,time:'09:30',type:'bus',title:'Lisboa → Sintra',sub:'Day trip · Scotturb 1253',status:'booked',who:['maria'],by:'maria',op:'Scotturb',ref:'SCT-88213',via:'screenshot',route:['LIS','Lisboa','SIN','Sintra','10:15','45m'],facts:[['SEAT','Free seating'],['RETURN','Open, same day']],qr:true,pax:[['maria','Free seating']],qrSrc:'Scotturb e-ticket'},
+  {id:15,day:1,time:'21:30',type:'event',title:'Fado night · Clube de Fado',sub:'Concert · 2 tickets · doors 21:00',status:'booked',who:B,by:'me',op:'Clube de Fado',ref:'CF-20931',via:'PDF',facts:[['VENUE','R. São João da Praça 94'],['DOORS','21:00'],['TABLE','12 · dinner incl.'],['ENDS','~00:30']],qr:true,pax:[['me','Table 12'],['maria','Table 12']],qrSrc:'Clube de Fado e-ticket'},
+  {id:5,day:1,time:'NIGHT',type:'stay',title:'Alfama Loft',sub:'Night 2 of 2',status:'booked',who:B,by:'me',op:'Booking.com',ref:'4021 883 196',via:'screenshot',facts:[['CHECKOUT','Fri 11:00'],['ADDRESS','R. de São Miguel 12']]},
+  {id:6,day:2,time:'05:40',type:'ride',title:'Get to LIS airport',sub:'Flight at 07:15 · 7 km',status:'tobook',who:B,op:'Alfama → Lisbon Airport',
+    options:[O('Bolt','Pickup + drop-off pre-filled','18 min','~€12','Open',{best:1,sub:'Bolt app'}),O('Uber','Pickup + drop-off pre-filled','18 min','~€14','Open',{sub:'Uber app'}),O('Taxi','Rank on Largo do Chafariz','18 min','~€16','Call',{sub:'phone'}),O('Metro · Red line','Opens 06:30, too late','—','€1.80','—',{off:1})]},
+  {id:7,day:2,time:'07:15',type:'flight',title:'Lisboa → Barcelona',sub:'TAP TP1032 · 2 passengers',status:'booked',who:B,by:'me',op:'TAP Air Portugal',ref:'QF8L2M',via:'PDF',route:['LIS','Lisboa','BCN','Barcelona','10:25','2h 10m'],facts:[['SEATS','14A · 14B'],['TERMINAL','T1'],['BAGS','1 × 23 kg'],['BOARDING','06:35']],fr:'tp1032',frDate:'Fri 16 Oct',nudge:'Check-in opens Thu 07:15',qr:true,pax:[['me','14A · Group 3'],['maria','14B · Group 3']],qrSrc:'TAP boarding pass',hist:[{k:'maria',t:'changed seats to 14A · 14B',when:'3 Oct'},{k:'me',t:'added it from a screenshot',when:'2 Oct'}]},
+  {id:8,day:2,time:'NIGHT',type:'gap',title:'No bed in Barcelona',sub:'Ferry leaves 08:00 · stay near the port?',status:'gap',who:B,op:'Accommodation',
+    options:[O('Booking.com','Near Port Vell · 6 free','10 min to port','from €92','Search',{best:1,sub:'pre-filled'}),O('Airbnb','Barceloneta · 11 free','15 min to port','from €110','Search',{sub:'pre-filled'})]},
+  {id:9,day:3,time:'08:00',type:'leg',title:'Barcelona → Ibiza',sub:'Planned by voice · how?',status:'tobook',who:B,op:'Barcelona → Ibiza',ends:['BCN','Barcelona','IBZ','Ibiza'],
+    options:[O('Ferry · Baleària','Day sailing · deck seats','8h 30m','€65','Book',{best:1,inapp:1,mode:'ferry',dep:'08:00',arr:'16:30',seller:'Baleària'}),O('Flight · Vueling','BCN → IBZ · cabin bag only','1h 00m','€48','Book',{inapp:1,mode:'flight',dep:'07:05',arr:'08:05',seller:'Vueling'}),O('Fast ferry · Trasmed','Via Palma','5h 15m','€89','Book',{inapp:1,mode:'ferry',dep:'09:30',arr:'14:45',seller:'Trasmed'})]},
+  {id:10,day:3,time:'NIGHT',type:'gap',title:'No bed in Ibiza',sub:'Nothing arranged yet',status:'gap',who:B,op:'Accommodation',
+    options:[O('Booking.com','Eivissa town · 14 free','—','from €120','Search',{best:1,sub:'pre-filled'}),O('Airbnb','Santa Eulària · 20 free','—','from €95','Search',{sub:'pre-filled'})]},
+  {id:12,day:4,time:'06:40',type:'doc',title:'Fill in eTravel',sub:'Philippines · opens 72 h before landing',status:'tobook',who:B,op:'Philippines · entry',
+    options:[O('etravel.gov.ph','Official · free · ~10 min each · gives a QR','10 min','free','Open',{best:1,sub:'official site'})]},
+  {id:11,day:4,time:'NIGHT',type:'gap',title:'No bed in Ibiza',sub:'Night 2',status:'gap',who:B,op:'Accommodation',
+    options:[O('Booking.com','Eivissa town','—','from €120','Search',{best:1,sub:'pre-filled'}),O('Airbnb','Santa Eulària','—','from €95','Search',{sub:'pre-filled'})]},
+  {id:13,day:6,time:'13:05',type:'flight',title:'Ibiza → Manila',sub:'Qatar QR 140 via Doha · lands Wed 06:40',status:'booked',who:B,by:'me',op:'Qatar Airways',ref:'QR7MZK',via:'PDF',route:['IBZ','Ibiza','MNL','Manila','06:40+1','23h 35m'],facts:[['SEATS','32A · 32B'],['STOP','Doha · 2h 10m'],['BAGS','2 × 23 kg'],['ENTRY','eTravel QR needed']],fr:'qr140',frDate:'Tue 20 Oct',nudge:'eTravel QR needed to board',qr:true,pax:[['me','32A'],['maria','32B']],qrSrc:'Qatar boarding pass'}
+];
+const RULES = [
+  ['leave','Leave now','Live traffic and transit, when it\'s time to go'],
+  ['disrupt','Delays & cancellations','Live, with alternatives'],
+  ['checkin','Flight check-in opens','Once, when it\'s time'],
+  ['docs','Entry documents & deadlines','eTravel, visas, forms, when the window opens'],
+  ['ride','A ride isn\'t booked yet','Before you need to leave'],
+  ['nobed','No bed for tonight','Midday, only if still unsorted'],
+  ['doc','Ticket is ready to show','Right before boarding'],
+  ['checkout','Checkout time','30 min before'],
+  ['story','New-country stories','A short story and one place, when you land']
+];
+const THEMES = {
+  brasil:{name:'Brasil',sub:'Pastel yellow · cocoa brown',motif:'toucan / carnival art',accent:'#8A5A3B',hover:'#74492E',ink:'#5E3B24',soft:'#FFF2B3',softHover:'#FCE993',bg:'#FFFCEE',glow:'rgba(138,90,59,.45)',disabled:'#D9C3B3',second:'#DCE7FF'},
+  mauritius:{name:'Île Maurice',sub:'Lagoon · coral',motif:'dodo illustration',accent:'#1AA3A6',hover:'#138A8D',ink:'#0E6B6E',soft:'#D6F2F0',softHover:'#C3EBE8',bg:'#F5FBF9',glow:'rgba(26,163,166,.45)',disabled:'#B5DFDF',second:'#FFE0D4'},
+  pastel:{name:'Andando! pastel',sub:'Mint · cream',motif:'trip artwork',accent:'#1F9D6B',hover:'#1A8A5E',ink:'#15724D',soft:'#E2F3EA',softHover:'#D3ECDF',bg:'#FBF7F1',glow:'rgba(31,157,107,.45)',disabled:'#B9D9C9',second:'#FFF1D6'},
+  azulejo:{name:'Azulejo',sub:'Tile blue · sand',motif:'tile pattern',accent:'#3D74C9',hover:'#3263B0',ink:'#2A549A',soft:'#E1EAFA',softHover:'#D2DFF6',bg:'#F8F9FC',glow:'rgba(61,116,201,.45)',disabled:'#BCCDEA',second:'#FDF0D2'},
+  sunset:{name:'Sunset',sub:'Rose · peach',motif:'sunset artwork',accent:'#C9688F',hover:'#B05679',ink:'#8E3F60',soft:'#FBE3EC',softHover:'#F6D3E0',bg:'#FDF8F6',glow:'rgba(201,104,143,.45)',disabled:'#E6C2D1',second:'#FFEBD6'}
+};
+const CL = [
+  {id:1,t:'Passports (both)',done:true,who:'Both'},
+  {id:2,t:'Print Airbnb address for the taxi',done:false,who:'Maria'},
+  {id:3,t:'Download offline map of Ibiza',done:false,who:'You'}
+];
+const SUGGEST = ['Proof of onward flight · Philippines','Power adapter type A/B · Philippines','Cash in pesos for arrival'];
+const VOICES = [{t:'Train to Lisbon today around two',lang:'English detected',listen:'Listening…'},{t:'Tren a Lisboa hoy sobre las dos',lang:'Español detectado',listen:'Escuchando…'}];
+const hh = n => String(((n%24)+24)%24).padStart(2,'0')+':00';
+
+class Component extends DCLogic {
+  state = {
+    screen: this.props.startScreen || 'upcoming', prev:'upcoming', viewer:'me',
+    items: SEED, detailId:null, sheet:null, selDay:0, free:{},
+    notif:true, how:'vibrate', checkinWhen:'open', rideLead:30, quietFrom:23, quietTo:7,
+    ob: (this.props.showWelcome ?? true) ? 0 : 3, obInv:false, obJoined:false, obCal:'shared', toastUndo:false,
+    voiceN:0, voiceLang:VOICES[0], story:false, mapAdd:false,
+    rules:{story:true,leave:true,disrupt:true,checkin:true,docs:true,ride:true,nobed:true,doc:false,checkout:false}, cap:2,
+    disrupt:false, dAck:null, insDone:false, gcal:false, gcStage:'pick', gcBack:false, gcSel:{travel:true,shared:true,personal:false,work:false},
+    voiceStage:'listen', heard:'', shotStage:'pick', copied:false,
+    mType:'any', mTo:'', mDay:0, mWith:true, toast:null, nextId:100, ticketId:null, pax:0,
+    clOn:true, cl:CL, clText:'', suggest:SUGGEST, co:null, coStage:'review',
+    theme: THEMES[this.props.theme] ? this.props.theme : 'brasil'
+  };
+  timers = [];
+  componentDidUpdate(pp){
+    if(pp.theme!==this.props.theme && THEMES[this.props.theme]) this.setState({theme:this.props.theme});
+    if(pp.startScreen!==this.props.startScreen && this.props.startScreen) this.setState({screen:this.props.startScreen});
+  }
+  isPhone(){ try{ return window.innerWidth<520 || window.matchMedia('(display-mode: standalone)').matches; }catch(e){ return false; } }
+  componentDidMount(){ this._rs=()=>this.forceUpdate(); window.addEventListener('resize',this._rs); try{ if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){} }
+  componentWillUnmount(){ this.clearTimers(); clearTimeout(this.tt); }
+  clearTimers(){ this.timers.forEach(clearTimeout); this.timers = []; }
+  later(fn,ms){ this.timers.push(setTimeout(fn,ms)); }
+  showToast(t,undo){ this.undoFn = undo||null; this.setState({toast:t,toastUndo:!!undo}); clearTimeout(this.tt); this.tt = setTimeout(()=>this.setState({toast:null,toastUndo:false}),undo?5000:2400); }
+  logChange(id,t){ this.setState(s=>({items:s.items.map(i=>i.id===id?{...i,hist:[{k:s.viewer,t,when:'just now'},...(i.hist||[])]}:i)})); }
+  open(id){ this.setState(s=>({screen:'detail',prev:s.screen==='detail'?s.prev:s.screen,detailId:id,copied:false,sheet:null})); }
+  showTicket(id){ this.setState({ticketId:id,pax:0}); }
+  setItem(id,patch){ this.setState(s=>({items:s.items.map(i=>i.id===id?{...i,...patch}:i)})); }
+  nm(k){ const p = this.props.yourName || 'Partner'; return k===this.state.viewer ? 'You' : k==='maria' ? 'Maria' : p; }
+  startVoice(){
+    this.clearTimers();
+    const v = VOICES[this.state.voiceN%2];
+    this.setState(s=>({sheet:'voice',voiceStage:'listen',heard:'',voiceLang:v,voiceN:s.voiceN+1}));
+    const w = v.t.split(' ');
+    w.forEach((x,i)=>this.later(()=>this.setState({heard:w.slice(0,i+1).join(' ')}),500+i*260));
+    this.later(()=>this.setState({voiceStage:'parsed'}),500+w.length*260+700);
+  }
+  depM(){ const s=this.state; return s.dAck==='switch'?909:s.disrupt?874:849; }
+  fm(m){ return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+  scheduled(vis){
+    const {rules,cap,free,notif,checkinWhen,rideLead} = this.state;
+    if(!notif) return {out:[],held:0};
+    const has = id => vis.find(x=>x.id===id);
+    const open = id => { const i = has(id); return i && i.status!=='booked' && !free[i.day]; };
+    const rideT = (h,m) => { let t=h*60+m-rideLead; return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); };
+    const all = [
+      {d:0,day:'Today',time:'10:18',rule:'disrupt',title:'CP 133 delayed 25 min',why:'Now departs 14:34 · options inside',p:0,ok:this.state.disrupt&&!!has(3)},
+      {d:0,day:'Today',time:this.fm(this.depM()-37),rule:'leave',title:'Leave now for Campanhã',why:this.state.disrupt?'Re-timed with live train data':'Metro F 22 min + 15 min buffer',p:0,ok:!!has(3)},
+      {d:2,day:'Fri',time:'05:25',rule:'leave',title:'Leave now for LIS',why:'Live traffic · 18 min',p:0,ok:!!has(7)},
+      {d:0,day:'Today',time:'10:30',rule:'checkout',title:'Checkout at 11:00',why:'Casa Ribeira · keys in lockbox',p:3,ok:!!has(1)},
+      {d:0,day:'Today',time:rideT(13,20),rule:'ride',title:'Get to Campanhã',why:'Train 14:09 · nothing booked yet',p:1,ok:open(2)},
+      {d:0,day:'Today',time:'13:50',rule:'doc',title:'Train ticket ready',why:'Tap to show QR',p:2,ok:!!has(3)},
+      checkinWhen==='open' ? {d:1,day:'Thu',time:'07:15',rule:'checkin',title:'Check in for TP1032',why:'Check-in just opened',p:1,ok:!!has(7)}
+                           : {d:1,day:'Thu',time:'19:00',rule:'checkin',title:'Check in for TP1032',why:'Flight tomorrow 07:15',p:1,ok:!!has(7)},
+      {d:1,day:'Thu',time:'21:00',rule:'ride',title:'Get to the airport',why:'Flight 07:15 · early start',p:1,ok:open(6)},
+      {d:2,day:'Fri',time:'05:30',rule:'doc',title:'Boarding pass ready',why:'Opens offline',p:2,ok:!!has(7)},
+      {d:2,day:'Fri',time:'12:00',rule:'nobed',title:'No bed in Barcelona tonight',why:'Still nothing booked',p:1,ok:open(8)},
+      {d:3,day:'Sat',time:'12:00',rule:'nobed',title:'No bed in Ibiza tonight',why:'Still nothing booked',p:1,ok:open(10)},
+      {d:4,day:'Sun',time:'09:00',rule:'docs',title:'eTravel is open for the Philippines',why:'10 min each · needed to board Tue',p:1,ok:open(12)},
+      {d:5,day:'Mon',time:'09:00',rule:'docs',title:'Last full day for eTravel',why:'Still not done for the Philippines',p:1,ok:open(12)}
+    ].filter(a=>rules[a.rule] && a.ok);
+    const out=[]; let held=0;
+    [0,1,2,3,4,5,6].forEach(d=>{ const day=all.filter(a=>a.d===d).sort((a,b)=>a.p-b.p); day.slice(0,cap).sort((a,b)=>a.time.localeCompare(b.time)).forEach(a=>out.push(a)); held+=Math.max(0,day.length-cap); });
+    return {out,held};
+  }
+  bookFromOption(itemId,o){
+    const it = this.state.items.find(i=>i.id===itemId); const e = it.ends || ['','', '', ''];
+    const ref = (o.seller.slice(0,3).toUpperCase())+'-'+Math.floor(10000+Math.random()*89999);
+    this.setItem(itemId,{status:'booked',type:o.mode,time:o.dep,title:`${e[1]} → ${e[3]}`,sub:`${o.seller} · booked in Andando!`,op:o.seller,ref,by:this.state.viewer,via:'Andando! booking',options:null,
+      route:[e[0],e[1],e[2],e[3],o.arr,o.dur],facts:[['PASSENGERS',String(it.who.length)],['FARE',o.price+' pp'],['CHANGES','Free up to 24 h'],['SOLD BY',o.seller]],qr:true,pax:it.who.map(w=>[w, o.mode==='flight'?'Seat at check-in':'Deck seat']),qrSrc:`${o.seller} e-ticket`});
+  }
+
+  renderVals(){
+    const s = this.state, P = this.props;
+    const th = THEMES[s.theme] || THEMES.brasil;
+    const other = s.viewer==='me' ? 'maria' : 'me';
+    const vis = s.items.filter(i=>i.who.includes(s.viewer));
+    const sk = t => t==='NIGHT'?2400:t==='TBD'?2300:parseInt(t.replace(':',''),10);
+    const pendingOn = d => s.free[d] ? [] : vis.filter(i=>i.day===d && i.status!=='booked');
+
+    const strip = DAYS.map((d,idx)=>{
+      const its = vis.filter(i=>i.day===idx), pend = pendingOn(idx).length, sel = s.selDay===idx;
+      return {dow:d.dow, num:d.num, bg: pend ? '#FCE3DC' : '#FFFFFF', fg: pend ? '#B4472F' : '#2A2622',
+        bd: sel ? `2px solid ${pend?'#B4472F':th.ink}` : '2px solid transparent',
+        mark: s.free[idx] ? '~' : pend ? `•${pend}` : its.length ? '✓' : '·', pick:()=>this.setState({selDay:idx})};
+    });
+
+    const dayIdx = s.selDay, isFree = !!s.free[dayIdx], DD = DAYS[dayIdx];
+    const its = vis.filter(i=>i.day===dayIdx).sort((a,b)=>sk(a.time)-sk(b.time));
+    const dayItems = its.map(i=>{
+      const t=T[i.type], booked=i.status==='booked', gap=i.status==='gap', calm = !booked && isFree, solo = i.who.length===1;
+      const dl = i.id===3 && s.disrupt;
+      const live = dl ? (s.dAck==='switch' ? 'Switched to 15:09 ✓' : s.dAck==='keep' ? 'Delayed · leaves 14:34' : 'Delayed +25 min · now 14:34') : '';
+      return {time:i.time.replace('+1',''), kind:t.k, title:i.title, sub: calm ? 'Unplanned, by choice' : i.id===2 ? `Train at ${this.fm(this.depM())} · 4 km` : i.sub,
+        hasLive: !!live, live, liveBg: s.dAck==='switch' ? th.soft : '#FCE3DC', liveFg: s.dAck==='switch' ? th.ink : '#B4472F',
+        tileBg: calm ? '#F4EEE5' : gap ? '#FFFFFF' : t.bg, tileFg: calm ? '#8A8076' : t.fg,
+        cardBg: booked ? '#FFFFFF' : calm ? '#FBF8F3' : gap ? 'transparent' : '#FFF8F5',
+        border: booked ? '1.5px solid #F1EBE1' : calm ? '1.5px dashed #DDD3C4' : gap ? '2px dashed #EDA48C' : '1.5px solid #F5CFC2',
+        subFg: booked||calm ? '#7A7168' : '#A0523A',
+        hasNudge: !!i.nudge && booked && s.notif && !live, nudge:i.nudge,
+        hasQr: booked && !!i.qr, plainBooked: booked && !i.qr, pending: !booked,
+        whoLabel: solo ? 'Solo' : 'Both', whoBg: solo ? '#E6EEFB' : '#F1EBE1', whoFg: solo ? '#3C5FA8' : '#6E655B',
+        action: calm ? 'Later' : gap ? 'Find' : i.type==='doc' ? 'Do it' : 'Options',
+        actBg: calm ? '#EFE8DD' : gap ? '#FFFFFF' : '#E8664A', actFg: calm ? '#8A8076' : gap ? '#C2502F' : '#FFFFFF',
+        open:()=>this.open(i.id), showQr:e=>{ e.stopPropagation(); this.showTicket(i.id); }};
+    });
+    const elsewhere = DAYS.map((d,idx)=>({idx,n:pendingOn(idx).length,d})).filter(x=>x.idx!==dayIdx && x.n>0)
+      .map(x=>({label:`${x.idx===0?'Today':x.idx===1?'Tomorrow':x.d.dow+' '+x.d.num} · ${x.n}`, pick:()=>this.setState({selDay:x.idx})}));
+    const hasPendingHere = its.some(i=>i.status!=='booked');
+
+    const {out:sched, held} = this.scheduled(vis);
+    const todayAlerts = sched.filter(a=>a.d===0).length;
+
+    const it = s.items.find(i=>i.id===s.detailId) || s.items[0];
+    const dt = T[it.type], dBooked = it.status==='booked', dFree = !!s.free[it.day];
+    const d = {
+      kind:dt.k, tileBg:dt.bg, tileFg:dt.fg, op:it.op, title:it.title, sub:it.sub,
+      pill: dBooked ? 'Booked' : dFree ? 'Unplanned' : it.status==='gap' ? 'Nothing booked' : it.type==='doc' ? 'To do' : 'Not booked yet',
+      pillBg: dBooked ? th.soft : dFree ? '#F1EBE1' : '#FCE3DC', pillFg: dBooked ? th.ink : dFree ? '#7A7168' : '#B4472F',
+      hasRoute: !!it.route && dBooked, noRoute: !(it.route && dBooked),
+      fromCode:it.route?.[0], fromName:it.route?.[1], toCode:it.route?.[2], toName:it.route?.[3], arr:it.route?.[4], dur:it.route?.[5], time:it.time,
+      people: ['me','maria'].map(k=>{ const inn = it.who.includes(k); return {label: inn ? `✓ ${this.nm(k)}` : `+ Add ${this.nm(k)}`,
+        bg: inn ? th.soft : '#FFFFFF', fg: inn ? th.ink : '#7A7168', bd: inn ? '1.5px solid transparent' : '1.5px dashed #DDD3C4',
+        toggle:()=>{ if(inn && it.who.length===1) return; const w = inn ? it.who.filter(x=>x!==k) : [...it.who,k];
+          this.setItem(it.id,{who:w, pax: it.pax && !inn ? [...it.pax,[k,'Seat to confirm']] : it.pax});
+          this.logChange(it.id, inn ? `removed ${this.nm(k)}` : `added ${this.nm(k)}`);
+          this.showToast(inn ? `${this.nm(k)} removed` : `${this.nm(k)} joins · now in both agendas`);
+          if(inn && k===s.viewer) this.setState({screen:'upcoming'}); }}; }),
+      isBooked: dBooked, isPending: !dBooked,
+      facts:(it.facts||[]).map(([k,v])=>({k,v})), hasFacts: !!(it.facts&&it.facts.length),
+      hasRef: dBooked && !!it.ref, ref:it.ref, noRefBooked: dBooked && !it.ref,
+      hasQr: dBooked && !!it.qr, showQr:()=>this.showTicket(it.id),
+      optTitle: it.type==='gap' ? 'PLACES TO STAY' : it.type==='event' ? 'TICKETS' : it.type==='doc' ? 'WHERE TO DO IT' : 'WAYS TO GET THERE',
+      options:(it.options||[]).map(o=>({name:o.n, note:o.note, dur:o.dur, price:o.price, best:!!o.best,
+        btn: o.inapp ? 'Book in Andando!' : o.btn, btnSub: o.inapp ? o.price+' pp' : (o.sub||''),
+        bd: o.best ? `2px solid ${th.accent}` : '1.5px solid #F1EBE1', op: o.off ? .5 : 1,
+        btnBg: o.off ? '#F1EBE1' : o.inapp||o.best ? th.accent : th.soft, btnFg: o.off ? '#A39888' : o.inapp||o.best ? '#FFFFFF' : th.ink,
+        go:()=>{ if(o.off) return; if(o.inapp){ this.setState({sheet:'checkout',co:{itemId:it.id,o},coStage:'review'}); } else this.showToast(`Opening ${o.n.split(' · ')[0]}…`); }})),
+      leaveLabel: dFree ? `Start planning ${DAYS[it.day].title.toLowerCase()} again` : `Leave ${DAYS[it.day].title.toLowerCase()} unplanned`,
+      footer: dBooked ? `${DAYS[it.day].title} · booked by ${it.by?this.nm(it.by).replace('You','you'):'you'}${it.via?` · via ${it.via}`:''}`
+        : it.type==='event' ? 'Buy the tickets, then add the PDF or a screenshot. The QR lands here and in Tickets.'
+        : it.type==='gap' ? 'Andando! spotted this gap from your plan. Stays open Booking.com or Airbnb with dates and guests filled in.'
+        : it.type==='doc' ? 'The window opens 72 h before you land (Wed 06:40), so Sun 06:40. You\'ll need the QR to board on Tuesday. Andando! reminds you once when it opens.'
+        : 'Book in Andando!: trains, buses, ferries and many flights, paid here. Rides open Uber or Bolt with the address filled in.',
+      hasDisrupt: it.id===3 && s.disrupt && !s.dAck, dSrc:'TRAINTRACKER.LIVE · 10:18',
+      dTitle:'Alfa Pendular 133 is running 25 min late. Now departs 14:34.',
+      dSub:'Arrives 17:26 instead of 17:01. Your leave-now alert moved to 13:57.',
+      dOpts:[
+        {name:'Keep this train',note:'Leave at 13:57 instead of 13:32',btn:'Keep',bg:th.soft,fg:th.ink,go:()=>{ this.setState({dAck:'keep'}); this.showToast('Kept · leave-now moved to 13:57'); }},
+        {name:'Alfa Pendular 135 · 15:09',note:'Arrives 18:01 · 2 seats together',btn:'Switch',bg:th.accent,fg:'#FFFFFF',go:()=>{ this.setItem(3,{time:'15:09',sub:'Alfa Pendular 135 · car 2 · switched',route:['PCA','Campanhã','LSA','Sta Apolónia','18:01','2h 52m'],facts:[['CAR','2'],['SEATS','23 · 24'],['CLASS','Turística'],['PLATFORM','Shown 15 min before']],pax:[['me','Car 2 · 23'],['maria','Car 2 · 24']]}); this.logChange(3,'switched to the 15:09 train'); this.setState({dAck:'switch'}); this.showToast('Switched to 15:09 · new QR on both phones'); }},
+        {name:'FlixBus · 14:30',note:'Campanhã → Oriente · 3h 30m',btn:'€14 pp',bg:'#F1EBE1',fg:'#5A524A',go:()=>this.showToast('Opening FlixBus in Andando!…')}
+      ],
+      hasFr: dBooked && (!!it.fr || it.type==='train'), frUrl: it.fr ? `https://www.flightradar24.com/data/flights/${it.fr}` : 'https://traintracker.live/',
+      trName: it.fr ? 'Track on Flightradar24' : 'Track on TrainTracker.live', trBadge: it.fr ? 'FR24' : 'RAIL',
+      frSub: it.fr ? `Auto-linked to ${it.fr.toUpperCase()} · ${it.frDate} · live map + delays` : `Auto-linked to ${it.sub.split(' · ')[0]} · live position + delays`,
+      hasHist: it.who.length>1 && !!(it.hist&&it.hist.length), hist:(it.hist||[]).slice(0,4).map(h=>({line:`${this.nm(h.k)} ${h.t}`, when:h.when})),
+      hasNudge: !!it.nudge && dBooked, nudgeLong: it.nudge ? `${it.nudge}. Andando! will ping you once.` : ''
+    };
+
+    const tki = s.items.find(i=>i.id===s.ticketId);
+    const tk = tki ? (()=>{ const t=T[tki.type]; const pl = tki.pax.filter(p=>tki.who.includes(p[0])); const p=pl[s.pax]||pl[0]; return {
+      kind:t.k, tileBg:t.bg, tileFg:t.fg, route: tki.route ? `${tki.route[1]} → ${tki.route[3]}` : tki.title,
+      sub:`${DAYS[tki.day].title} · ${tki.sub}`, paxName:this.nm(p[0]), seat:p[1], ref:tki.ref, time:tki.time,
+      qrLabel:`QR for ${this.nm(p[0])}\nfrom ${tki.qrSrc}`,
+      paxTabs: pl.map((x,i)=>({label:this.nm(x[0]), bg:s.pax===i?'#FFFFFF':'transparent', sh:s.pax===i?'0 1px 3px rgba(0,0,0,.12)':'none', pick:()=>this.setState({pax:i})}))}; })() : {paxTabs:[]};
+
+    const coIt = s.co && s.items.find(i=>i.id===s.co.itemId);
+    const co = s.co && coIt ? (()=>{ const o=s.co.o, n=parseFloat(o.price.replace(/[^\d.]/g,''))||0, e=coIt.ends||['','','','']; return {
+      dep:o.dep, kind:T[o.mode].k, tileBg:T[o.mode].bg, tileFg:T[o.mode].fg, route:`${e[1]} → ${e[3]}`, sub:`${DAYS[coIt.day].title} · ${o.dep}–${o.arr} · ${o.n}`,
+      pax: coIt.who.map(w=>({name:this.nm(w), price:o.price})), total:`€${(n*coIt.who.length).toFixed(0)}`, seller:o.seller}; })() : {pax:[]};
+
+    const pulse = React.createElement('span',{style:{position:'absolute',inset:0,borderRadius:34,background:th.accent,animation:'legPulse 1.5s ease-out infinite'}});
+    const bars = React.createElement('span',{style:{display:'flex',gap:4,alignItems:'center',height:30}},
+      [0,1,2,3,4].map(n=>React.createElement('span',{key:n,style:{width:5,height:30,borderRadius:3,background:'#FFFFFF',animation:`legBar .9s ease-in-out ${n*0.12}s infinite`}})));
+    const spinner = React.createElement('span',{style:{width:26,height:26,borderRadius:'50%',border:`3px solid ${th.soft}`,borderTopColor:th.accent,animation:'legSpin .8s linear infinite',flex:'none'}});
+
+    const eDone = (s.items.find(i=>i.id===12)||{}).status==='booked';
+    const ok = (b) => ({bg:th.soft, fg:th.ink, badge:b});
+    const todo = (b) => ({bg:'#FCE3DC', fg:'#B4472F', badge:b});
+    const countries = [
+      {name:'Philippines', when:'Lands Wed 21 Oct', rows:[
+        {title:'eTravel registration', sub:'For both of you. Opens Sun 06:40 (72 h before landing). The QR is checked at boarding.', ...(eDone?ok('Done ✓'):todo('Opens Sun')), go:()=>this.open(12), cursor:'pointer'},
+        {title:'Proof of onward travel', sub:'Airlines can refuse boarding without an exit ticket.', ...todo('Missing'), go:()=>{}, cursor:'default'},
+        {title:'Travel insurance', sub:'Suggested for every trip outside Europe. Your Spanish health card (TSE) doesn\'t cover you here.', ...(s.insDone?ok('Added ✓'):todo('Suggested')), go:()=>{ this.setState({insDone:!s.insDone}); this.showToast(s.insDone?'Insurance unmarked':'Insurance marked as sorted ✓'); }, cursor:'pointer'},
+        {title:'Visa', sub:'Spanish passports: visa-free for up to 30 days.', ...ok('Not needed'), go:()=>{}, cursor:'default'},
+        {title:'Passport validity', sub:'Needs 6+ months left after arrival. Worth a quick check.', bg:'#F1EBE1', fg:'#6E655B', badge:'Check', go:()=>{}, cursor:'default'},
+        {title:'Vaccinations', sub:'None mandatory. Yellow fever proof only if arriving from a risk country.', ...ok('None'), go:()=>{}, cursor:'default'}
+      ]},
+      {name:'Portugal · Spain', when:'Now', rows:[
+        {title:'EU citizens', sub:'DNI or passport is enough. Your TSE health card covers you.', ...ok('Nothing needed'), go:()=>{}, cursor:'default'}
+      ]}
+    ];
+    const docsTodoN = (eDone?0:1)+1+(s.insDone?0:1);
+
+    const typeList = [['any','Any'],['flight','Flight'],['train','Train'],['bus','Bus'],['ferry','Ferry'],['ride','Ride'],['stay','Stay'],['event','Event']];
+    const manualDup = s.mType==='train' && s.mDay===0 && /lis/i.test(s.mTo);
+    const seg = (sel) => ({bg: sel ? th.accent : '#F1EBE1', fg: sel ? '#FFFFFF' : '#5A524A'});
+    const nav = (k,label,glyph,extra={}) => ({label,glyph, bg: s.screen===k ? th.soft : 'transparent', fg: s.screen===k ? th.ink : '#5A524A', go:()=>this.setState({screen:k}), hasBadge:false, ...extra});
+    const dayName = i => i===0?'today':i===1?'tomorrow':DAYS[i].title;
+    const partner = this.nm(other);
+
+    const depM = this.depM(), leaveM = depM-37, toGo = leaveM-620, unacked = s.disrupt && !s.dAck;
+    const lv = {kicker: unacked ? 'TRAIN DELAYED 25 MIN' : `LEAVE-NOW · TRAIN ${this.fm(depM)}`, title:`Leave at ${this.fm(leaveM)}`,
+      sub: unacked ? 'Was 13:32 · tap for options' : 'Campanhã · Metro F 22 min + 15 min buffer',
+      mins:`${Math.floor(toGo/60)}h${String(toGo%60).padStart(2,'0')}`, bg: unacked ? '#C2502F' : th.accent, open:()=>this.open(unacked?3:2)};
+    const grey = {bg:'#F1EBE1',fg:'#6E655B'};
+    return {
+      lv, hasLeave: dayIdx===0 && !!vis.find(i=>i.id===3) && s.rules.leave,
+      disruptBtn: s.disrupt ? 'Reset the delay demo' : 'Simulate a train delay', disruptBtnBg: s.disrupt ? '#7A7168' : '#C2502F',
+      toggleDisrupt:()=>{ const on=!s.disrupt; const o=SEED.find(i=>i.id===3); if(!on) this.setItem(3,{time:o.time,sub:o.sub,route:o.route,facts:o.facts,pax:o.pax}); this.setState({disrupt:on,dAck:null,selDay:0,screen:'upcoming',sheet:null}); if(on) this.showToast('Live: CP 133 delayed 25 min'); },
+      gc:{sub: s.gcal ? `${Object.values(s.gcSel).filter(Boolean).length} calendars · travel & events only` : 'Optional · import trips and events', btn: s.gcal ? 'Connected ✓' : 'Connect', btnBg: s.gcal ? '#FFFFFF' : '#93650F', btnFg: s.gcal ? '#93650F' : '#FFFFFF'},
+      openGcal:()=>{ if(s.gcal) return this.showToast('Google Calendar already connected'); this.setState({sheet:'gcal',gcStage:'pick'}); },
+      sheetGcal: s.sheet==='gcal', gcPick: s.gcStage==='pick', gcScanning: s.gcStage==='scanning', gcDone: s.gcStage==='done',
+      gcCals:[['travel','Travel','Where trips land','#3C5FA8'],['shared','Maria & me','Shared calendar','#A33A6B'],['personal','Personal','Birthdays, errands','#4E7A2C'],['work','Work','Meetings','#93650F']].map(([k,name,sub,dot])=>{ const on=!!s.gcSel[k]; return {name,sub,dot,tick:on?'✓':'',bg:on?th.accent:'#FFFFFF',bd:on?'none':'2px solid #DDD3C4',toggle:()=>this.setState(st=>({gcSel:{...st.gcSel,[k]:!st.gcSel[k]}}))}; }),
+      toggleGcBack:()=>this.setState({gcBack:!s.gcBack}), gcBackTrack: s.gcBack ? th.accent : '#E2D9CB', gcBackAlign: s.gcBack ? 'flex-end' : 'flex-start',
+      gcAllowBg: Object.values(s.gcSel).some(Boolean) ? th.accent : th.disabled,
+      allowGcal:()=>{ if(!Object.values(s.gcSel).some(Boolean)) return; this.setState({gcStage:'scanning'}); this.later(()=>{
+        this.setState(st=>({gcStage:'done', items:[...st.items,
+          {id:201,day:5,time:'10:00',type:'ferry',title:'Ibiza → Formentera',sub:'From Google Calendar · no ticket yet',status:'tobook',who:['me','maria'],op:'Ibiza → Formentera',ends:['IBZ','Ibiza','FOR','Formentera'],
+            options:[O('Ferry · Baleària','Every 30 min · 35 min crossing','35 min','€28','Book',{best:1,inapp:1,mode:'ferry',dep:'10:00',arr:'10:35',seller:'Baleària'}),O('Ferry · Trasmapi','Fast boat','30 min','€31','Book',{inapp:1,mode:'ferry',dep:'10:15',arr:'10:45',seller:'Trasmapi'})]},
+          {id:202,day:5,time:'21:30',type:'event',title:'Open-air cinema · Cine Paraíso',sub:'From Google Calendar · 2 tickets',status:'booked',who:['me','maria'],by:'maria',op:'Cine Paraíso',ref:'CP-7712',via:'Google Calendar',facts:[['VENUE','Sant Joan de Labritja'],['FILM','21:30'],['SEATS','Row C · 4–5'],['BRING','A blanket']],qr:true,pax:[['me','Row C · 4'],['maria','Row C · 5']],qrSrc:'ticket attached to the calendar event'}
+        ]})); },1600); },
+      gcFound:[
+        {t:'Ibiza → Formentera · Mon',s:'Travel · no ticket yet, Andando! will remind you',b:'New',bg:th.soft,fg:th.ink},
+        {t:'Open-air cinema · Mon',s:'Maria & me · ticket attached',b:'New',bg:th.soft,fg:th.ink},
+        {t:'Qatar QR 140 · Tue',s:'Already in Andando!',b:'Skipped',bg:'#F1EBE1',fg:'#6E655B'},
+        {t:'Call with accountant · Thu',s:'Not travel or an event',b:'Ignored',bg:'#F1EBE1',fg:'#6E655B'}],
+      finishGcal:()=>{ this.setState({sheet:null,gcal:true,screen:'upcoming',selDay:5}); this.showToast('Google Calendar connected · 2 added to Monday'); },
+      gcNotNow:()=>{ this.setState({sheet:null,gcStage:'pick'}); this.showToast('Skipped. You can connect any time in Settings.'); },
+      th, showIntro: !this.isPhone() && (P.showIntro ?? true),
+      fr: this.isPhone() ? {pad:'0',w:'100vw',h:'100dvh',r1:'0',p:'0',sh:'none',r2:'0',sbar:'none'} : {pad:'40px 24px',w:'392px',h:'836px',r1:'50px',p:'10px',sh:'0 30px 60px -22px rgba(80,55,20,.4)',r2:'40px',sbar:'flex'},
+      viewers:[['me','Me'],['maria','Maria']].map(([k,l])=>({label:l, bg:s.viewer===k?'#FFFFFF':'transparent', sh:s.viewer===k?'0 1px 3px rgba(0,0,0,.12)':'none', pick:()=>this.setState({viewer:k,screen:'upcoming',selDay:k==='maria'?1:s.selDay})})),
+      hello: s.viewer==='maria' ? `Synced with ${partner} ✓` : 'Synced with Maria ✓',
+      isUpcoming:s.screen==='upcoming', isTickets:s.screen==='tickets', isTrip:s.screen==='trip', isAlerts:s.screen==='alerts', isSettings:s.screen==='settings', isDetail:s.screen==='detail',
+      showNav: s.screen!=='detail', gestureBg: s.screen==='detail' ? th.bg : '#FFFFFF',
+      navL:[nav('upcoming','Upcoming','▤'), nav('tickets','Tickets','QR')],
+      navR:[nav('trip','Trip','✓',{hasBadge:docsTodoN>0,badge:docsTodoN}), nav('map','Map','◎')],
+      isMap: s.screen==='map', mapSrc: `Travel%20Map%20Options.html?embed=${['a','b','c','d'].includes(P.mapStyle)?P.mapStyle:'d'}${s.mapAdd?'&add=608':''}&user=${s.viewer}`,
+      listenLabel: s.voiceLang.listen, langChip: s.voiceLang.lang, hasLang: !!s.heard,
+      hasStory: s.story, storyN: 15,
+      landManila:()=>{ this.setState({story:true,mapAdd:true,sheet:null,ticketId:null}); },
+      saveStory:()=>{ this.setState(st=>({story:false,cl:[...st.cl,{id:Date.now(),t:'Visit Batad Rice Terraces',done:false,who:'Both'}],clOn:true})); this.showToast('Saved to your trip checklist ✓'); },
+      closeStory:()=>this.setState({story:false}),
+      goSettings:()=>this.setState({screen:'settings'}), goAlerts:()=>this.setState({screen:'alerts'}), goUpcoming:()=>this.setState({screen:'upcoming'}), goTrip:()=>this.setState({screen:'trip'}),
+      goBack:()=>this.setState(st=>({screen:st.prev||'upcoming'})),
+      alertCount: todayAlerts, hasAlertBadge: todayAlerts>0,
+      strip,
+      day:{title:DD.title, sub:`${DD.dow} ${DD.num} Oct${DD.city?' · '+DD.city:''}`, isFree, canFree: isFree || hasPendingHere || its.length===0,
+        freeLabel: isFree ? 'Unplanned ✕' : 'Leave unplanned', freeBg: isFree ? '#F1EBE1' : '#FFFFFF', freeFg: isFree ? '#5A524A' : '#7A7168', freeBd: isFree ? '#F1EBE1' : '#E7DFD2'},
+      toggleFree:()=>{ const v=!s.free[dayIdx]; this.setState(st=>({free:{...st.free,[dayIdx]:v}})); this.showToast(v?`${DD.title} left open. No reminders.`:`Planning ${dayName(dayIdx)} again`); },
+      dayItems, dayEmpty: its.length===0,
+      elsewhere, hasElsewhere: elsewhere.length>0, allSorted: elsewhere.length===0,
+      tickets: vis.filter(i=>i.status==='booked' && i.qr).sort((a,b)=>a.day-b.day||sk(a.time)-sk(b.time)).map(i=>({kind:T[i.type].k, tileBg:T[i.type].bg, tileFg:T[i.type].fg,
+        when:`${DAYS[i.day].title.toUpperCase()} ${i.time}`, pax:`${i.pax.filter(p=>i.who.includes(p[0])).length} QR`, route:i.title, sub:i.sub, show:()=>this.showTicket(i.id)})),
+      hasTicket: !!tki, tk, closeTicket:()=>this.setState({ticketId:null}),
+      countries, docsTodo: docsTodoN ? `${docsTodoN} to do` : 'All set ✓',
+      clOn:s.clOn, clOff:!s.clOn, clTrack: s.clOn ? th.accent : '#E2D9CB', clAlign: s.clOn ? 'flex-end' : 'flex-start',
+      toggleChecklist:()=>this.setState({clOn:!s.clOn}),
+      checklist: s.cl.map(k=>({t:k.t, who:k.who, tick:k.done?'✓':'', boxBg:k.done?th.accent:'#FFFFFF', boxBd:k.done?'none':'2px solid #DDD3C4', fg:k.done?'#A39888':'#2A2622', deco:k.done?'line-through':'none',
+        toggle:()=>this.setState(st=>({cl:st.cl.map(x=>x.id===k.id?{...x,done:!x.done}:x)}))})),
+      clText:s.clText, setClText:e=>this.setState({clText:e.target.value}),
+      addCl:()=>{ const t=s.clText.trim(); if(!t) return; this.setState(st=>({cl:[...st.cl,{id:Date.now(),t,done:false,who:'You'}],clText:''})); },
+      suggest: s.suggest.map(t=>({t, add:()=>this.setState(st=>({cl:[...st.cl,{id:Date.now(),t,done:false,who:'Both'}],suggest:st.suggest.filter(x=>x!==t)}))})), hasSuggest: s.suggest.length>0,
+      alertsKicker: s.notif ? `${s.how==='sound'?'Sound + vibration':s.how==='vibrate'?'Vibration only':'Silent banners'} · max ${s.cap} a day` : 'Notifications are off',
+      scheduled:sched, noScheduled:sched.length===0, hasHeld:held>0,
+      noAlertsText: s.notif ? 'Nothing needs you this week.' : 'Notifications are off. Andando! stays quiet.',
+      heldText:`${held} lower-priority alert${held>1?'s':''} held back by your daily limit.`,
+      settingsKicker: s.viewer==='maria' ? `Maria · linked with ${partner}` : 'You · linked with Maria',
+      partnerChip: `${partner} · linked`,
+      toggleNotif:()=>this.setState({notif:!s.notif}),
+      notifHint: s.notif ? 'Only the ones below' : 'Off. Nothing will ping you',
+      notifTrack: s.notif ? th.accent : '#E2D9CB', notifAlign: s.notif ? 'flex-end' : 'flex-start',
+      setOpacity: s.notif ? 1 : .4, setPointer: s.notif ? 'auto' : 'none',
+      rules: RULES.map(([k,l,h])=>({label:l, hint:h, track:s.rules[k]?th.accent:'#E2D9CB', align:s.rules[k]?'flex-end':'flex-start', toggle:()=>this.setState(st=>({rules:{...st.rules,[k]:!st.rules[k]}}))})),
+      hows:[['sound','Sound','+ vibrate'],['vibrate','Vibrate','no sound'],['silent','Silent','banner only']].map(([k,l,sub])=>({label:l,sub,...seg(s.how===k),pick:()=>this.setState({how:k})})),
+      checkinOpts:[['open','When it opens'],['evening','Evening before']].map(([k,l])=>({label:l,...seg(s.checkinWhen===k),pick:()=>this.setState({checkinWhen:k})})),
+      leadOpts:[15,30,60].map(n=>({label:n===60?'1 h':`${n} min`,...seg(s.rideLead===n),pick:()=>this.setState({rideLead:n})})),
+      quietText:`${hh(s.quietFrom)} – ${hh(s.quietTo)}`,
+      qFromDown:()=>this.setState(st=>({quietFrom:(st.quietFrom+23)%24})), qFromUp:()=>this.setState(st=>({quietFrom:(st.quietFrom+1)%24})),
+      caps:[1,2,3].map(n=>({n:String(n), bg:s.cap===n?'#2A2622':'transparent', fg:s.cap===n?'#FFFFFF':'#5A524A', pick:()=>this.setState({cap:n})})),
+      d, copyLabel: s.copied ? 'Copied ✓' : 'Copy', copyRef:()=>this.setState({copied:true}),
+      markBooked:()=>{ const done = it.type==='doc'; this.setItem(it.id,{status:'booked', type: it.type==='gap'?'stay':it.type, title: it.type==='gap'? it.title.replace('No bed in','Stay in') : done ? 'eTravel done' : it.title, sub: done?'Both QR codes saved':'Booked · forward the email for details', by:s.viewer, ref:null, options:null}); this.logChange(it.id, done?'marked eTravel as done':'marked it as booked'); this.showToast(done?'eTravel marked done ✓':'Marked as booked ✓'); },
+      leaveDay:()=>{ const v=!s.free[it.day]; this.setState(st=>({free:{...st.free,[it.day]:v},screen:'upcoming',selDay:it.day})); this.showToast(v?`${DAYS[it.day].title} left open. No reminders.`:'Back to planning'); },
+      hasSheet: !!s.sheet, sheetAdd:s.sheet==='add', sheetVoice:s.sheet==='voice', sheetShot:s.sheet==='shot', sheetManual:s.sheet==='manual', sheetTheme:s.sheet==='theme', sheetCheckout:s.sheet==='checkout',
+      co, coReview: s.coStage==='review', coPaying: s.coStage==='paying',
+      payNow:()=>{ const c=s.co; this.setState({coStage:'paying'}); this.later(()=>{ this.bookFromOption(c.itemId,c.o); this.logChange(c.itemId,`booked it in Andando! · ${c.o.seller}`); this.setState({sheet:null,co:null,coStage:'review',screen:'detail',detailId:c.itemId}); this.showToast('Booked ✓ Tickets + QR on both phones'); },1500); },
+      addDayLabel: dayName(s.selDay),
+      openAdd:()=>this.setState({sheet:'add'}), closeSheet:()=>{ this.clearTimers(); this.setState({sheet:null,coStage:'review'}); },
+      openVoice:()=>this.startVoice(), openPdf:()=>this.setState({sheet:'shot',shotStage:'pick'}),
+      openShot:()=>this.setState({sheet:'shot',shotStage:'pick'}), openManual:()=>this.setState({sheet:'manual',mTo:'',mDay:s.selDay,mWith:true}),
+      openTheme:()=>this.setState({sheet:'theme'}),
+      themes: Object.entries(THEMES).map(([k,t])=>({name:t.name, sub:t.sub, a:t.accent, b:t.soft, c:t.second, d:t.bg, motif:t.motif,
+        ring: s.theme===k ? `2.5px solid ${t.accent}` : '2.5px solid transparent', pick:()=>{ this.setState({theme:k,sheet:null}); this.showToast(`${t.name} theme on`); }})),
+      voiceListening:s.voiceStage==='listen', voiceParsed:s.voiceStage==='parsed',
+      transcript: s.heard ? `“${s.heard}”` : '', pulse, bars, spinner,
+      dupText: s.viewer==='me' ? 'Maria booked this for you both on 18 Sep: 14:09, car 4, seats 41 & 42.' : 'You booked this for you both on 18 Sep: 14:09, car 4, seats 41 & 42.',
+      openExisting:()=>{ this.clearTimers(); this.setState({sheet:null}); this.open(3); },
+      shotTitle: s.shotStage==='done' ? 'Found a ferry booking' : 'Pick a screenshot or PDF',
+      shotPick:s.shotStage==='pick', shotReading:s.shotStage==='reading', shotDone:s.shotStage==='done',
+      pickShot:()=>{ this.setState({shotStage:'reading'}); this.later(()=>{ const prev=s.items.find(i=>i.id===9); this.bookFromOption(9,{seller:'Baleària',mode:'ferry',dep:'08:00',arr:'16:30',dur:'8h 30m',price:'€65'}); this.setItem(9,{via:'PDF',sub:'Baleària · 2 passengers · deck'}); this.logChange(9,'added the ferry ticket from a PDF'); this.setState({sheet:null,selDay:3,screen:'upcoming',shotStage:'pick'}); this.showToast('Ferry added to Saturday ✓ · synced to Maria', ()=>{ this.setState(st=>({items:st.items.map(i=>i.id===9?prev:i)})); this.showToast('Undone. Nothing was added'); }); },1400); },
+      confirmShot:()=>{ this.bookFromOption(9,{seller:'Baleària',mode:'ferry',dep:'08:00',arr:'16:30',dur:'8h 30m',price:'€65'}); this.setItem(9,{via:'screenshot',sub:'Baleària · 2 passengers · deck'}); this.setState({sheet:null,selDay:3,screen:'upcoming'}); this.showToast('Ferry added to Saturday ✓'); },
+      types: typeList.map(([k,l])=>({label:l, bg:s.mType===k?th.accent:'#FFFFFF', fg:s.mType===k?'#FFFFFF':'#5A524A', pick:()=>this.setState({mType:k})})),
+      manualTo:s.mTo, setManualTo:e=>this.setState({mTo:e.target.value}),
+      manualPh: s.mType==='stay' ? 'Which city?' : s.mType==='event' ? 'Concert, cinema, match…' : 'Where to?',
+      dayChips: DAYS.map((dd,i)=>({label: i===0?'Today':i===1?'Tomorrow':`${dd.dow} ${dd.num}`, bg:s.mDay===i?'#2A2622':'#FFFFFF', fg:s.mDay===i?'#FFFFFF':'#5A524A', pick:()=>this.setState({mDay:i})})),
+      toggleMWith:()=>this.setState({mWith:!s.mWith}), mWithLabel:`${partner} comes too`, mWithTick: s.mWith?'✓':'', mWithBg: s.mWith?th.accent:'#FFFFFF', mWithBd: s.mWith?'none':'2px solid #DDD3C4',
+      manualDup, addBg: s.mTo.trim() ? th.accent : th.disabled,
+      addManual:()=>{
+        if(!s.mTo.trim()) return;
+        const k = s.mType==='any' ? 'leg' : s.mType, to = s.mTo.trim();
+        const cap = w => w[0]+w.slice(1).toLowerCase();
+        const n = {id:s.nextId, day:s.mDay, time: k==='stay'?'NIGHT':'TBD', type:k, title: k==='stay'?`Stay in ${to}`: k==='event'? to : k==='leg'?`Get to ${to}`:`${cap(T[k].k)} to ${to}`, sub: k==='leg'?'Planned · how?': k==='event'?'Event · no tickets yet':'Planned · not booked', status:'tobook', who: s.mWith?['me','maria']:[s.viewer], op: k==='leg'?`To ${to}`:cap(T[k].k),
+          options: k==='event' ? [O('Already have tickets?','Add the PDF or a screenshot','—','','Add',{best:1,sub:'1 tap'}),O('Find tickets','Search the event online','—','compare','Search',{sub:'web'})] : k==='stay' ? [O('Booking.com','Central','—','compare','Search',{best:1,sub:'pre-filled'}),O('Airbnb','Central','—','compare','Search',{sub:'pre-filled'})] : [O('Train','Andando! checks timetables','—','compare','Search',{best:1,sub:'compare'}),O('Bus','FlixBus, ALSA…','—','compare','Search',{sub:'compare'}),O('Flight','If it\'s far or over water','—','compare','Search',{sub:'compare'})]};
+        this.setState(st=>({items:[...st.items,n],nextId:st.nextId+1,sheet:null,screen:'upcoming',selDay:s.mDay}));
+        this.showToast(`Added to ${dayName(s.mDay)}${s.mWith?' · in both agendas':''}`);
+      },
+      hasToast: !!s.toast, toast:s.toast, toastUndo: s.toastUndo, doUndo:()=>{ const fn=this.undoFn; this.undoFn=null; this.setState({toastUndo:false}); if(fn) fn(); },
+      obOn: s.ob<3, ob0: s.ob===0, ob1: s.ob===1, ob2: s.ob===2,
+      obDots:[0,1,2].map(i=>({w:i===s.ob?'22px':'8px', bg:i<=s.ob?th.accent:'#E2D9CB'})),
+      obGoogle:()=>this.setState({ob:1}),
+      obInviteGo:()=>{ if(s.obJoined) return this.setState({ob:2}); if(s.obInv) return; this.setState({obInv:true}); this.later(()=>this.setState({obJoined:true}),1500); },
+      obInviteLabel: s.obJoined ? 'Next' : s.obInv ? 'Waiting for Maria to tap the link…' : 'Send invite link on WhatsApp',
+      obInviteBg: s.obInv && !s.obJoined ? th.disabled : th.accent,
+      obNext1:()=>this.setState({ob:2}), obNext1Label: s.obJoined ? 'Maria joined ✓' : 'Do it later',
+      obLinkGlyph: s.obJoined ? '⇄' : '···', obLinkFg: s.obJoined ? th.ink : '#C9BFB0',
+      obMariaBg: s.obJoined ? th.soft : '#FFFFFF', obMariaFg: s.obJoined ? th.ink : '#A39888', obMariaBd: s.obJoined ? '1.5px solid transparent' : '2px dashed #DDD3C4',
+      obCals:[['shared','Maria & me','Shared · 2 people','#A33A6B'],['travel','Travel','Only you','#3C5FA8'],['personal','Personal','Only you','#4E7A2C']].map(([k,name,sub,dot])=>({name,sub,dot,bd:s.obCal===k?`2px solid ${th.accent}`:'2px solid #DDD3C4',fill:s.obCal===k?th.accent:'transparent',pick:()=>this.setState({obCal:k})})),
+      obFinish:()=>{ this.setState({ob:3,gcal:true,gcSel:{travel:s.obCal==='travel',shared:s.obCal==='shared',personal:s.obCal==='personal',work:false}}); this.showToast('All set. Calendar connected ✓'); },
+      obSkip:()=>this.setState({ob:3}),
+      replayWelcome:()=>this.setState({ob:0,obInv:false,obJoined:false,screen:'upcoming'}),
+      exportBackup:()=>{ try{ const data={app:'Andando!',exported:new Date().toISOString(),items:s.items,checklist:s.cl}; const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})); a.download='andando-backup.json'; document.body.appendChild(a); a.click(); a.remove(); }catch(e){} this.showToast('Backup saved · trips, refs and QR codes'); }
+    };
+  }
+}
+</script>
+</body>
+</html>

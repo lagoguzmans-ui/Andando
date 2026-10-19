@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#F1EADF;font-family:'Nunito',system-ui,sans-serif;color:#2A2622;-webkit-font-smoothing:antialiased}a{color:#8A5A3B}a:hover{color:#5E3B24}</style>
+</helmet>
+<sc-for list="{{ turns }}" as="t" hint-placeholder-count="2">
+<section id="{{ t.id }}" style="padding:48px 40px 56px;display:flex;flex-direction:column;gap:26px;border-bottom:1.5px solid #E2D9CB">
+<div style="max-width:780px;display:flex;flex-direction:column;gap:8px">
+<span style="font:500 11px 'DM Mono',monospace;letter-spacing:.1em;color:#7A7168">{{ t.kicker }}</span>
+<div style="font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.1">{{ t.title }}</div>
+<div style="font-size:15px;line-height:1.5;color:#5A524A;text-wrap:pretty">{{ t.sub }}</div>
+</div>
+<div style="display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start">
+<sc-for list="{{ t.opts }}" as="o" hint-placeholder-count="5">
+<div id="{{ o.id }}" style="display:flex;flex-direction:column;gap:12px;width:300px">
+<div style="display:flex;align-items:center;gap:10px"><span style="font:500 12px 'DM Mono',monospace;background:#2A2622;color:#FFFFFF;padding:4px 9px;border-radius:8px">{{ o.id }}</span><span style="font-size:19px;font-weight:800">{{ o.name }}</span></div>
+<div style="width:300px;height:620px;background:#2A2622;border-radius:42px;padding:9px;box-sizing:border-box;box-shadow:0 26px 50px -22px rgba(80,55,20,.45)">
+<div style="position:relative;width:100%;height:100%;border-radius:34px;overflow:hidden;background:{{ o.wall }};display:flex;flex-direction:column">
+<div style="height:30px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:11.5px;font-weight:700;color:#FFFFFF"><span>10:20</span><span style="font:500 10px 'DM Mono',monospace">5G · 82%</span></div>
+<div style="padding:22px 22px 0;color:#FFFFFF"><div style="font-size:44px;font-weight:600;letter-spacing:-.02em;line-height:1">10:20</div><div style="font-size:13px;font-weight:700;opacity:.9;margin-top:4px">Mon, 19 Oct · Ibiza 24°</div></div>
+<div style="margin-top:auto;padding:0 18px 14px;display:grid;grid-template-columns:repeat(4,1fr);row-gap:16px;column-gap:6px">
+<sc-for list="{{ grid }}" as="g" hint-placeholder-count="7">
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+<span style="width:50px;height:50px;border-radius:16px;background:{{ g.bg }};display:flex;align-items:center;justify-content:center;font:500 9px 'DM Mono',monospace;color:{{ g.fg }}">{{ g.l }}</span>
+<span style="font-size:10.5px;font-weight:700;color:#FFFFFF;white-space:nowrap">{{ g.n }}</span>
+</div>
+</sc-for>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px">
+<img src="{{ o.src }}" alt="Andando! icon" style="width:50px;height:50px;border-radius:16px;display:block;box-shadow:0 2px 6px rgba(0,0,0,.18)">
+<span style="font-size:10.5px;font-weight:800;color:#FFFFFF;white-space:nowrap">Andando!</span>
+</div>
+</div>
+<div style="margin:0 12px 10px;padding:10px 14px;border-radius:26px;background:rgba(255,255,255,.22);display:flex;justify-content:space-between;align-items:center">
+<span style="width:46px;height:46px;border-radius:50%;background:#FFFFFF;opacity:.85"></span>
+<span style="width:46px;height:46px;border-radius:50%;background:#FFFFFF;opacity:.85"></span>
+<img src="{{ o.src }}" alt="Andando! icon, round" style="width:46px;height:46px;border-radius:50%;display:block">
+<span style="width:46px;height:46px;border-radius:50%;background:#FFFFFF;opacity:.85"></span>
+</div>
+<div style="height:16px;flex:none;display:flex;align-items:center;justify-content:center"><span style="width:90px;height:4px;border-radius:2px;background:#FFFFFF;opacity:.8"></span></div>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:14px">
+<img src="{{ o.src }}" alt="" style="width:76px;height:76px;border-radius:22px;display:block">
+<div style="font-size:13.5px;line-height:1.45;color:#5A524A;text-wrap:pretty">{{ o.note }}</div>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    const wall = c => `linear-gradient(180deg, ${c} 0%, #1F2422 100%)`;
+    const mk = (list, dir) => list.map(([id,name,f,note,w])=>({id,name,note,src:dir+f,wall:wall(w)}));
+    const turns = [
+      {id:'turn3', kicker:'ANDANDO! · APP ICON · ROUND 3', title:'Pink 60L backpack with patches',
+       sub:'A trekking pack: top lid with buckles, compression straps, hip belt and a rolled sleeping mat. Patches: sun, star, heart and a little plane tag. Same pack, five backgrounds.',
+       opts: mk([
+        ['3a','Sunshine','3a-pink-pack-sunshine.png','Warm and happy. Pink and yellow feel the most "holiday".','#3E5A4E'],
+        ['3b','Mint','3b-pink-pack-mint.png','Fresh and calm. The pink pops most against green.','#4A5470'],
+        ['3c','Sky','3c-pink-pack-sky.png','Bright and adventurous, like a clear travel day.','#6B5B4E'],
+        ['3d','Cocoa','3d-pink-pack-cocoa.png','Matches the app\'s brown palette. Warm and grounded.','#2F4F5F'],
+        ['3e','Midnight','3e-pink-pack-midnight.png','Dark with a pink glow. The most premium; stands out on any wallpaper.','#5A4A63']
+       ],'icons/')},
+      {id:'turn2', kicker:'ANDANDO! · APP ICON · ROUND 2', title:'Glossy 3D and characters',
+       sub:'Based on your answers: depth, light and a bit of personality, built around steps and a backpack. Tell me the number, or mix (e.g. the 2b character on the 2e dark background).',
+       opts: mk([
+        ['2a','Glossy backpack','2a-glossy-backpack.png','Shiny coral backpack on sunshine yellow. Clean, bright, instantly "travel".','#3E5A4E'],
+        ['2b','Backpack buddy','2b-backpack-buddy.png','The backpack becomes a little character walking under a blue sky. Most playful.','#4A5470'],
+        ['2c','Glossy steps','2c-glossy-steps.png','Two shiny footprints, one each, on deep cocoa. "Andando!" in its simplest form.','#6B5B4E'],
+        ['2d','Step duo','2d-step-duo.png','Two smiling footprints, you and Maria, side by side on a sunset.','#2F4F5F'],
+        ['2e','Night buddy','2e-night-buddy.png','Golden backpack character glowing on dark brown. Premium, stands out on any wallpaper.','#5A4A63']
+       ],'icons/')},
+      {id:'turn1', kicker:'ANDANDO! · APP ICON · ROUND 1', title:'Flat options (not chosen)',
+       sub:'The first set, kept for reference.',
+       opts: mk([
+        ['1a','Footsteps','icon-option-1-footsteps.png','Two flat footprints.','#3E5A4E'],
+        ['1b','The path','icon-option-2-path.png','Winding road to a pin.','#4A5470'],
+        ['1c','A monogram','icon-option-3-monogram.png','A with a flight arc.','#6B5B4E'],
+        ['1d','Horizon','icon-option-4-horizon.png','Sunrise over the horizon.','#2F4F5F'],
+        ['1e','Together','icon-option-5-together.png','Two dots, one route.','#5A4A63']
+       ],'icons/')}
+    ];
+    const grid = [['Maps','#FFFFFF','#4285F4','M'],['Gmail','#FFFFFF','#EA4335','G'],['Uber','#000000','#FFFFFF','U'],['Booking','#003580','#FFFFFF','B.'],['Airbnb','#FF5A5F','#FFFFFF','A'],['WhatsApp','#25D366','#FFFFFF','W'],['Camera','#ECECEC','#555555','◉']].map(([n,bg,fg,l])=>({n,bg,fg,l}));
+    return { turns, grid };
+  }
+}
+</script>
+</body>
+</html>

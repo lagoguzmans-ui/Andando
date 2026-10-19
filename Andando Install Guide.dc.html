@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Andando! · Install guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<style>body{margin:0;background:#FFFCEE;font-family:'Nunito',system-ui,sans-serif;color:#2A2622;-webkit-font-smoothing:antialiased}a{color:#C2366F;font-weight:800}a:hover{color:#8F1F4E}</style>
+</helmet>
+<div style="max-width:760px;margin:0 auto;padding:40px 18px 90px;display:flex;flex-direction:column;gap:26px">
+
+<div style="display:flex;align-items:center;gap:16px">
+<img src="icon-192.png" alt="Andando! icon" style="width:72px;height:72px;border-radius:20px;flex:none">
+<div style="min-width:0"><div style="font:500 11px 'DM Mono',monospace;letter-spacing:.1em;color:#7A7168">INSTALL GUIDE · FREE · NO CARD · NO TECH SKILLS</div><div style="font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Andando! on both your phones</div></div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+<sc-for list="{{ need }}" as="n" hint-placeholder-count="4">
+<div style="background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:3px"><span style="font-size:12px;font-weight:800;color:#C2366F;letter-spacing:.05em">{{ n.k }}</span><span style="font-size:14.5px;font-weight:700;line-height:1.4">{{ n.v }}</span></div>
+</sc-for>
+</div>
+
+<div style="background:#FFF2B3;border-radius:22px;padding:18px 20px;display:flex;flex-direction:column;gap:8px">
+<div style="font-size:16px;font-weight:800;color:#5E3B24">Today, in about 35 minutes</div>
+<div style="font-size:14.5px;line-height:1.55;color:#5E3B24;text-wrap:pretty"><b>Part A (15 min):</b> the app goes online and onto both phones.<br><b>Part B (20 min):</b> you create the free accounts that make sync, PDF reading and the calendar work. At the end you send me one block of text, and I send back the connected version. Uploading it takes 2 minutes, following the same steps as A3.</div>
+</div>
+
+<sc-for list="{{ parts }}" as="p" hint-placeholder-count="2">
+<div style="display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;align-items:baseline;gap:12px;padding-top:14px;border-top:2px solid #EDE5D9">
+<span style="font-size:13px;font-weight:800;color:#FFFFFF;background:{{ p.color }};padding:5px 11px;border-radius:10px;white-space:nowrap">{{ p.tag }}</span>
+<span style="font-size:24px;font-weight:800;letter-spacing:-.01em;line-height:1.2">{{ p.title }}</span>
+</div>
+<sc-for list="{{ p.steps }}" as="s" hint-placeholder-count="4">
+<div style="display:flex;flex-direction:column;gap:10px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:24px;padding:18px 18px 16px">
+<div style="display:flex;align-items:center;gap:12px">
+<span style="width:46px;height:46px;flex:none;border-radius:15px;background:{{ p.color }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">{{ s.n }}</span>
+<span style="min-width:0"><span style="display:block;font-size:19px;font-weight:800;line-height:1.25">{{ s.title }}</span><span style="display:block;font-size:12.5px;font-weight:700;color:#8A8076;margin-top:2px">{{ s.where }} · {{ s.time }}</span></span>
+</div>
+<div style="display:flex;flex-direction:column;gap:2px">
+<sc-for list="{{ s.items }}" as="i" hint-placeholder-count="5">
+<div style="display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid #F7F2EA">
+<span style="width:26px;height:26px;border-radius:9px;background:#F4EEE5;color:#5E3B24;display:flex;align-items:center;justify-content:center;font:500 12px 'DM Mono',monospace">{{ i.n }}</span>
+<span style="min-width:0;display:flex;flex-direction:column;gap:4px">
+<span style="font-size:15.5px;line-height:1.5;text-wrap:pretty">{{ i.t }}</span>
+<sc-if value="{{ i.hasType }}" hint-placeholder-val="{{ false }}"><span style="align-self:flex-start;font:500 13.5px 'DM Mono',monospace;background:#2A2622;color:#FFE07A;padding:6px 10px;border-radius:9px;word-break:break-all">{{ i.type }}</span></sc-if>
+<sc-if value="{{ i.hasSee }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;line-height:1.45;color:#5A524A;background:#FFF8E0;border-radius:10px;padding:6px 10px;text-wrap:pretty"><b>You'll see:</b> {{ i.see }}</span></sc-if>
+</span>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{ s.hasHelp }}" hint-placeholder-val="{{ false }}"><div style="font-size:13.5px;line-height:1.5;color:#8E3F2A;background:#FCE3DC;border-radius:14px;padding:10px 14px;text-wrap:pretty"><b>If it doesn't work:</b> {{ s.help }}</div></sc-if>
+</div>
+</sc-for>
+</div>
+</sc-for>
+
+<div style="background:#2A2622;color:#FFFFFF;border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:10px">
+<div style="font-size:18px;font-weight:800">Last step: send me this in the chat</div>
+<div style="font-size:14.5px;line-height:1.6;opacity:.92;text-wrap:pretty">1. The text you copied in <b>B3</b> (it starts with <span style="font-family:'DM Mono',monospace;color:#FFE07A">const firebaseConfig</span>).<br>2. Your GitHub username from <b>A2</b>.<br>It isn't a password: it only tells the app which Firebase project to use, and only you and Maria can sign in. <b>Don't</b> send me the Gemini key; you'll paste it into the app yourself.</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="font-size:20px;font-weight:800;margin-bottom:6px">Good to know</div>
+<sc-for list="{{ notes }}" as="n" hint-placeholder-count="5">
+<div style="display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid #EDE5D9"><b style="font-size:14.5px">{{ n.k }}</b><span style="font-size:14px;line-height:1.5;color:#5A524A;text-wrap:pretty">{{ n.v }}</span></div>
+</sc-for>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    const I = (t, o={}) => ({t, type:o.type||'', see:o.see||'', hasType:!!o.type, hasSee:!!o.see});
+    const num = list => list.map((x,i)=>({...x,n:i+1}));
+    const St = (n,title,where,time,items,help) => ({n,title,where,time,items:num(items),help:help||'',hasHelp:!!help});
+    const need = [
+      {k:'A COMPUTER',v:'Laptop or desktop with Chrome. Uploading files is much easier there than on a phone.'},
+      {k:'YOUR GOOGLE ACCOUNT',v:'Your normal Gmail login. You\'ll use it for every free account.'},
+      {k:'YOUR ANDROID PHONE',v:'With Chrome installed (it is on almost every Android).'},
+      {k:'MARIA\'S PHONE',v:'Only for step A5, at the end. It takes her 1 minute.'}
+    ];
+    const partA = [
+      St('A1','Download the app files','On the computer','2 min',[
+        I('In this chat, find the card called "Andando! app files" and click it. A file called something like Andando.zip downloads.',{see:'The file appears at the bottom of Chrome or in your Downloads folder.'}),
+        I('Open your Downloads folder. Right-click the zip file and choose "Extract All…" (Windows) or double-click it (Mac).',{see:'A normal folder appears next to it, with the same name.'}),
+        I('Open that folder and leave the window open. You\'ll drag files from it in step A3.')
+      ],'If the zip won\'t open, download it again; it may have stopped halfway.'),
+      St('A2','Create a free GitHub account','On the computer','4 min',[
+        I('Open Chrome and go to this address:',{type:'github.com/signup'}),
+        I('Type your email, create a password, and choose a username. Short and simple, all lowercase, no spaces.',{type:'mariaandme',see:'If the name is taken, GitHub suggests another. Write down the one you get; it becomes part of your app link.'}),
+        I('Solve the small puzzle GitHub shows (it checks you\'re a person), then click Create account.'),
+        I('GitHub emails you a code. Open your Gmail, copy the code and paste it on the GitHub page.'),
+        I('If GitHub asks questions about how you\'ll use it, click "Skip personalization" at the bottom.',{see:'Your GitHub dashboard, mostly empty.'})
+      ]),
+      St('A3','Put the app online','On the computer','5 min',[
+        I('Go to this address to create a new project space (GitHub calls it a "repository"):',{type:'github.com/new'}),
+        I('In "Repository name" type:',{type:'andando'}),
+        I('Make sure "Public" is selected. Tick the box "Add a README file". Click the green button Create repository.',{see:'A page titled "andando" with one file, README.md.'}),
+        I('Click the button "Add file" (near the top right of the file list), then "Upload files".',{see:'A big box that says "Drag files here".'}),
+        I('Go to the folder from A1. Press Ctrl+A (Windows) or Cmd+A (Mac) to select everything, and drag it all into that box.',{see:'A list of files uploading, with small progress bars. Wait until all are done.'}),
+        I('Scroll down and click the green button Commit changes.',{see:'Your files listed on the andando page, including index.html.'}),
+        I('Click "Settings" (top menu of the page, with a gear icon). In the left menu, click "Pages".'),
+        I('Under "Branch", click the button that says "None" and choose "main". Leave the next box as "/ (root)". Click Save.'),
+        I('Wait 2 minutes, then refresh the page (F5).',{see:'A box at the top saying "Your site is live at https://YOUR-USERNAME.github.io/andando/" and a Visit site button.'}),
+        I('Click Visit site.',{see:'The Andando! welcome screen with the pink backpack. Your app is online.'})
+      ],'If you see "404", wait 2 more minutes and refresh; the first launch can be slow. If it still fails, check that index.html appears in the file list on the main andando page.'),
+      St('A4','Install it on your phone','On your phone','1 min',[
+        I('On your phone, open Chrome and type your app address exactly:',{type:'YOUR-USERNAME.github.io/andando'}),
+        I('Tap the three dots ⋮ at the top right of Chrome.'),
+        I('Tap "Install app". On some phones it says "Add to Home screen" instead; both are fine. Confirm with Install or Add.',{see:'The pink backpack icon called Andando! on your home screen.'}),
+        I('From now on, always open Andando! from that icon, not from Chrome.')
+      ],'If you don\'t see "Install app", scroll down the ⋮ menu; it\'s sometimes lower in the list. Make sure the address starts with https.'),
+      St('A5','Install it on Maria\'s phone','On Maria\'s phone','1 min',[
+        I('Send Maria your app address on WhatsApp.'),
+        I('She taps the link. If it opens inside WhatsApp, she taps ⋮ → "Open in Chrome".'),
+        I('She taps ⋮ → Install app, the same as A4.',{see:'The pink backpack icon on her home screen too.'})
+      ],'For now the app runs on sample trips and nothing syncs yet. Part B turns all of that on.')
+    ];
+    const partB = [
+      St('B1','Create your free Firebase project','On the computer','4 min',[
+        I('Go to this address and sign in with your Google account:',{type:'console.firebase.google.com'}),
+        I('Click "Create a project" (or "Get started with a Firebase project").'),
+        I('In "Project name" type the name below, tick the box to accept the terms, and click Continue.',{type:'andando'}),
+        I('On the next screen, switch Google Analytics OFF. Click Create project.',{see:'"Your new project is ready". Click Continue.'}),
+        I('You\'re on the free plan, called "Spark". Never click "Upgrade"; nothing here needs it.')
+      ]),
+      St('B2','Switch on sign-in and the shared database','On the computer','6 min',[
+        I('In the left menu, click "Build", then "Authentication", then the button "Get started".'),
+        I('In the list of sign-in providers, click "Google". Switch "Enable" on. In "Support email", choose your email. Click Save.',{see:'Google shown as "Enabled".'}),
+        I('Still in Authentication, click the "Settings" tab, then "Authorised domains" in the left list, then "Add domain". Type the address below, with your own username, and click Add.',{type:'YOUR-USERNAME.github.io'}),
+        I('In the left menu, click "Build", then "Firestore Database", then "Create database".'),
+        I('For location, choose "eur3 (Europe)". Click Next. Choose "Start in production mode". Click Create.',{see:'An empty database page. Your trips will appear here once the connected version is live.'})
+      ],'If you can\'t find "Build" in the left menu, click the small ☰ icon at the top left to open the menu.'),
+      St('B3','Copy your app\'s settings for me','On the computer','2 min',[
+        I('At the top of the left menu, click the gear ⚙ next to "Project overview", then "Project settings".'),
+        I('Scroll down to "Your apps". Click the round icon that looks like </> (it means "web").'),
+        I('In "App nickname" type the name below. Leave "Firebase Hosting" unticked. Click Register app.',{type:'Andando'}),
+        I('You\'ll see a block of text that starts with const firebaseConfig = { and ends with };',{see:'Lines like apiKey, authDomain, projectId… That whole block is what I need.'}),
+        I('Select that block from "const firebaseConfig" down to "};" with your mouse, press Ctrl+C (Cmd+C on Mac), and paste it into this chat.'),
+        I('Click "Continue to console". Firebase is done.')
+      ]),
+      St('B4','Get your free Gemini key (it reads PDFs and screenshots)','On the computer','2 min',[
+        I('Go to this address and sign in with the same Google account:',{type:'aistudio.google.com/apikey'}),
+        I('If it asks you to accept terms, tick and continue. Click "Create API key". If it asks for a project, pick "andando".',{see:'A long code starting with AIza…'}),
+        I('Click Copy, open Google Keep or Notes on your phone, and save it there. You\'ll paste it into Andando! once the connected version arrives (Settings → Ticket reading). Don\'t share it, not even with me.')
+      ],'On the free tier Google may use what you send to improve its models. Andando! only ever sends the ticket file, never your email.'),
+      St('B5','Your shared Google Calendar','Later, in the app','3 min',[
+        I('Nothing to do today. When the connected version arrives, you both pick "Maria & me" on the welcome screen.'),
+        I('I\'ll also send a short helper text for script.google.com, with its own 5 click-by-click steps. Only one of you sets it up, because the calendar is shared. It brings calendar trips into the app and sends your reminders, even when the app is closed.')
+      ])
+    ];
+    const parts = [
+      {tag:'PART A',title:'Put Andando! on both phones',color:'#F2639B',steps:partA},
+      {tag:'PART B',title:'Switch on sync, PDF reading and the calendar',color:'#8A5A3B',steps:partB}
+    ];
+    const notes = [
+      {k:'What it costs',v:'€0. GitHub, Firebase (Spark plan), Gemini (free tier) and Google Apps Script are free, and none asks for a card.'},
+      {k:'Your email stays private',v:'Andando! never connects to your inbox. Google is only used to sign you in.'},
+      {k:'Updating later',v:'When I send a new version: open github.com/YOUR-USERNAME/andando → Add file → Upload files → drag in the new files → Commit changes. The phones update the next time you open the app.'},
+      {k:'Offline',v:'Once opened, trips and QR codes work with no signal. Changes sync when you\'re back online.'},
+      {k:'Backup',v:'In the app: Settings → Backup → Export all trips saves everything to a file on your phone.'}
+    ];
+    return { need, parts, notes };
+  }
+}
+</script>
+</body>
+</html>
