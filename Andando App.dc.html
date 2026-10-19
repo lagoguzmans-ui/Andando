@@ -201,7 +201,7 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 <button onClick="{{ openPrototype }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Design demo</span><span style="font-size:12.5px;font-weight:800;color:#5E3B24">Open ›</span></button>
 <button onClick="{{ doSignOut }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700;color:#B4472F">Sign out</span></button>
 </div>
-<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v2</div>
+<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v3</div>
 </div>
 </sc-if>
 
@@ -353,7 +353,8 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 <script type="text/x-dc" data-dc-script>
 const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/';
-const GEMINI = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const GAPI = 'https://generativelanguage.googleapis.com/v1beta/';
+const MODEL_FALLBACKS = ['gemini-flash-latest','gemini-3.8-flash','gemini-3.0-flash','gemini-3-flash','gemini-2.5-flash'];
 const T = {
   flight:{bg:'#E6EEFB',fg:'#3C5FA8',k:'FLIGHT',l:'Flight'}, train:{bg:'#FFF1D6',fg:'#93650F',k:'TRAIN',l:'Train'},
   bus:{bg:'#FCE8EF',fg:'#A8466A',k:'BUS',l:'Bus'}, ferry:{bg:'#DDF1F3',fg:'#1D7480',k:'FERRY',l:'Ferry'},
@@ -453,10 +454,28 @@ class Component extends DCLogic {
     this.showToast('Something went wrong: '+m.slice(0,160));
   }
 
-  async gemini(parts){
+  async pickModel(force){
+    if(!force){ try{ const m = localStorage.getItem('andando-model'); if(m) return m; }catch(e){} }
+    let best = '';
+    try{
+      const r = await fetch(GAPI+'models?pageSize=200',{headers:{'x-goog-api-key':this.state.key}});
+      if(r.ok){ const j = await r.json();
+        const ok = (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace(/^models\//,''))
+          .filter(n=>/^gemini-[\d.]+-flash$/.test(n) || n==='gemini-flash-latest');
+        const ver = n => parseFloat((n.match(/gemini-([\d.]+)/)||[])[1]||'0');
+        best = ok.includes('gemini-flash-latest') ? 'gemini-flash-latest' : ok.sort((a,b)=>ver(b)-ver(a))[0] || '';
+      }
+    }catch(e){}
+    best = best || MODEL_FALLBACKS[0];
+    try{ localStorage.setItem('andando-model', best); }catch(e){}
+    return best;
+  }
+  async gemini(parts, retry=0){
     if(!this.state.key) throw new Error('NOKEY');
-    const r = await fetch(GEMINI,{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':this.state.key},
+    const model = retry===0 ? await this.pickModel(false) : retry===1 ? await this.pickModel(true) : MODEL_FALLBACKS[Math.min(retry-2, MODEL_FALLBACKS.length-1)];
+    const r = await fetch(GAPI+'models/'+model+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':this.state.key},
       body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:0.1}})});
+    if(r.status===404 && retry < MODEL_FALLBACKS.length+1){ try{ localStorage.removeItem('andando-model'); }catch(e){} if(retry>=1) try{ localStorage.setItem('andando-model', MODEL_FALLBACKS[Math.min(retry-1, MODEL_FALLBACKS.length-1)]); }catch(e){} return this.gemini(parts, retry+1); }
     if(!r.ok){ let msg=''; try{ const ej = await r.json(); msg = (ej.error && ej.error.message) || ''; }catch(e){}
       if((r.status===400||r.status===401||r.status===403) && /api key|API_KEY|permission|unauthori|credential/i.test(msg)) throw new Error('KEY');
       if(r.status===429) throw new Error('Gemini is busy (free limit for this minute). Try again in a minute.');
