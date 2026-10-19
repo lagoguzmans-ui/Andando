@@ -201,7 +201,7 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 <button onClick="{{ openPrototype }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Design demo</span><span style="font-size:12.5px;font-weight:800;color:#5E3B24">Open ›</span></button>
 <button onClick="{{ doSignOut }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700;color:#B4472F">Sign out</span></button>
 </div>
-<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v3</div>
+<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v4</div>
 </div>
 </sc-if>
 
@@ -354,7 +354,7 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
 const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/';
 const GAPI = 'https://generativelanguage.googleapis.com/v1beta/';
-const MODEL_FALLBACKS = ['gemini-flash-latest','gemini-3.8-flash','gemini-3.0-flash','gemini-3-flash','gemini-2.5-flash'];
+const MODEL_FALLBACKS = ['gemini-flash-lite-latest','gemini-flash-latest','gemini-3.8-flash','gemini-3.0-flash','gemini-3-flash','gemini-2.5-flash'];
 const T = {
   flight:{bg:'#E6EEFB',fg:'#3C5FA8',k:'FLIGHT',l:'Flight'}, train:{bg:'#FFF1D6',fg:'#93650F',k:'TRAIN',l:'Train'},
   bus:{bg:'#FCE8EF',fg:'#A8466A',k:'BUS',l:'Bus'}, ferry:{bg:'#DDF1F3',fg:'#1D7480',k:'FERRY',l:'Ferry'},
@@ -455,28 +455,30 @@ class Component extends DCLogic {
   }
 
   async pickModel(force){
-    if(!force){ try{ const m = localStorage.getItem('andando-model'); if(m) return m; }catch(e){} }
+    if(!force){ try{ const m = localStorage.getItem('andando-model3'); if(m) return m; }catch(e){} }
     let best = '';
     try{
       const r = await fetch(GAPI+'models?pageSize=200',{headers:{'x-goog-api-key':this.state.key}});
       if(r.ok){ const j = await r.json();
         const ok = (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace(/^models\//,''))
-          .filter(n=>/^gemini-[\d.]+-flash$/.test(n) || n==='gemini-flash-latest');
+          .filter(n=>/^gemini-[\d.]+-flash(-lite)?$/.test(n) || n==='gemini-flash-latest' || n==='gemini-flash-lite-latest');
         const ver = n => parseFloat((n.match(/gemini-([\d.]+)/)||[])[1]||'0');
-        best = ok.includes('gemini-flash-latest') ? 'gemini-flash-latest' : ok.sort((a,b)=>ver(b)-ver(a))[0] || '';
+        const lite = ok.filter(n=>n.includes('lite')), full = ok.filter(n=>!n.includes('lite'));
+        best = ok.includes('gemini-flash-lite-latest') ? 'gemini-flash-lite-latest' : (lite.sort((a,b)=>ver(b)-ver(a))[0] || (ok.includes('gemini-flash-latest') ? 'gemini-flash-latest' : full.sort((a,b)=>ver(b)-ver(a))[0]) || '');
       }
     }catch(e){}
     best = best || MODEL_FALLBACKS[0];
-    try{ localStorage.setItem('andando-model', best); }catch(e){}
+    try{ localStorage.setItem('andando-model3', best); }catch(e){}
     return best;
   }
   async gemini(parts, retry=0){
     if(!this.state.key) throw new Error('NOKEY');
     const model = retry===0 ? await this.pickModel(false) : retry===1 ? await this.pickModel(true) : MODEL_FALLBACKS[Math.min(retry-2, MODEL_FALLBACKS.length-1)];
     const r = await fetch(GAPI+'models/'+model+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':this.state.key},
-      body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:{responseMimeType:'application/json',temperature:0.1}})});
-    if(r.status===404 && retry < MODEL_FALLBACKS.length+1){ try{ localStorage.removeItem('andando-model'); }catch(e){} if(retry>=1) try{ localStorage.setItem('andando-model', MODEL_FALLBACKS[Math.min(retry-1, MODEL_FALLBACKS.length-1)]); }catch(e){} return this.gemini(parts, retry+1); }
+      body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:Object.assign({responseMimeType:'application/json',temperature:0.1}, this.noThink ? {} : {thinkingConfig:{thinkingBudget:0}})})});
+    if(r.status===404 && retry < MODEL_FALLBACKS.length+1){ try{ localStorage.removeItem('andando-model3'); }catch(e){} if(retry>=1) try{ localStorage.setItem('andando-model3', MODEL_FALLBACKS[Math.min(retry-1, MODEL_FALLBACKS.length-1)]); }catch(e){} return this.gemini(parts, retry+1); }
     if(!r.ok){ let msg=''; try{ const ej = await r.json(); msg = (ej.error && ej.error.message) || ''; }catch(e){}
+      if(r.status===400 && !this.noThink && /think/i.test(msg)){ this.noThink = true; return this.gemini(parts, retry); }
       if((r.status===400||r.status===401||r.status===403) && /api key|API_KEY|permission|unauthori|credential/i.test(msg)) throw new Error('KEY');
       if(r.status===429) throw new Error('Gemini is busy (free limit for this minute). Try again in a minute.');
       throw new Error('Gemini '+r.status+(msg?': '+msg:'')); }
@@ -488,7 +490,7 @@ class Component extends DCLogic {
   async toWav(blob){
     const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC();
     const src = await ac.decodeAudioData(await blob.arrayBuffer()); try{ ac.close(); }catch(e){}
-    const rate = 16000, len = Math.max(1, Math.ceil(src.duration*rate));
+    const rate = 12000, len = Math.max(1, Math.ceil(src.duration*rate));
     const off = new OfflineAudioContext(1, len, rate); const node = off.createBufferSource(); node.buffer = src; node.connect(off.destination); node.start();
     const out = (await off.startRendering()).getChannelData(0);
     const buf = new ArrayBuffer(44 + out.length*2), v = new DataView(buf); let o = 0;
@@ -517,18 +519,19 @@ class Component extends DCLogic {
     }
     return out;
   }
-  shrink(c, max=900){ const s=Math.min(1,max/Math.max(c.width,c.height)); const o=document.createElement('canvas'); o.width=Math.round(c.width*s); o.height=Math.round(c.height*s); o.getContext('2d').drawImage(c,0,0,o.width,o.height); return o.toDataURL('image/jpeg',0.72); }
+  shrink(c, max=900, q=0.72){ const s=Math.min(1,max/Math.max(c.width,c.height)); const o=document.createElement('canvas'); o.width=Math.round(c.width*s); o.height=Math.round(c.height*s); o.getContext('2d').drawImage(c,0,0,o.width,o.height); return o.toDataURL('image/jpeg',q); }
   async pdfPages(buf){
     const pdfjs = await import(PDFJS+'pdf.min.mjs');
     pdfjs.GlobalWorkerOptions.workerSrc = PDFJS+'pdf.worker.min.mjs';
     const pdf = await pdfjs.getDocument({data:new Uint8Array(buf.slice(0))}).promise;
-    const pages = [];
+    const pages = []; let text = '';
     for(let i=1;i<=Math.min(pdf.numPages,3);i++){
-      const pg = await pdf.getPage(i); const vp = pg.getViewport({scale:2.2});
+      const pg = await pdf.getPage(i); const vp = pg.getViewport({scale:2});
+      try{ const tc = await pg.getTextContent(); text += tc.items.map(x=>x.str).join(' ') + '\n'; }catch(e){}
       const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
       await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; pages.push(c);
     }
-    return pages;
+    return {pages, text};
   }
   async imgCanvas(file){ const bm = await createImageBitmap(file); const c=document.createElement('canvas'); c.width=bm.width; c.height=bm.height; c.getContext('2d').drawImage(bm,0,0); return c; }
 
@@ -538,9 +541,13 @@ class Component extends DCLogic {
     try{
       const buf = await file.arrayBuffer();
       const isPdf = file.type==='application/pdf' || /\.pdf$/i.test(file.name);
-      const parsePromise = this.gemini([{text:PROMPT(iso(new Date()))},{inline_data:{mime_type:isPdf?'application/pdf':(file.type||'image/jpeg'),data:b64(buf)}}]);
-      let canvases = [];
-      try{ canvases = isPdf ? await this.pdfPages(buf) : [await this.imgCanvas(file)]; }catch(e){}
+      let canvases = [], text = '';
+      try{ if(isPdf){ const r = await this.pdfPages(buf); canvases = r.pages; text = r.text; } else canvases = [await this.imgCanvas(file)]; }catch(e){}
+      let part;
+      if(isPdf && text.replace(/\s/g,'').length > 80) part = {text:'Ticket or booking document (text extracted from PDF):\n' + text.slice(0,12000)};
+      else if(canvases[0]) part = {inline_data:{mime_type:'image/jpeg', data:this.shrink(canvases[0],1600,0.85).split(',')[1]}};
+      else part = {inline_data:{mime_type:isPdf?'application/pdf':(file.type||'image/jpeg'), data:b64(buf)}};
+      const parsePromise = this.gemini([{text:PROMPT(iso(new Date()))}, part]);
       const codes = await this.findCodes(canvases);
       const page = !codes.length && canvases[0] ? this.shrink(canvases[0]) : '';
       const res = await parsePromise;
@@ -757,7 +764,7 @@ class Component extends DCLogic {
           this.setState({busy:''}); this.showToast(codes.length?'QR saved ✓':'No code found, so the whole screenshot was saved'); }catch(err){ this.fail(err); } },
       hasSheet:!!s.sheet, sAdd:s.sheet==='add', sVoice:s.sheet==='voice', sQuick:s.sheet==='quick', sDup:s.sheet==='dup', sLink:s.sheet==='link', sDetail:s.sheet==='detail' && !!it,
       closeSheet:()=>{ if(s.sheet==='link') localStorage.setItem('andando-linklater','1'); if(this.rec&&this.rec.state!=='inactive'){ this.rec.onstop=null; try{this.rec.stop(); this.rec.stream.getTracks().forEach(t=>t.stop());}catch(e){} } this.setState({sheet:null}); },
-      openAdd:()=>this.setState({sheet:'add'}), addLabel:this.dayName(s.sel),
+      openAdd:()=>{ this.setState({sheet:'add'}); if(!this._pre){ this._pre=1; import(PDFJS+'pdf.min.mjs').catch(()=>{}); if(s.key) this.pickModel(false).catch(()=>{}); } }, addLabel:this.dayName(s.sel),
       startVoice:()=>this.startVoice(), stopVoice:()=>this.stopVoice(), vRec:s.voice==='rec', vThink:s.voice==='think',
       sayText:s.sayText, setSayText:e=>this.setState({sayText:e.target.value}), sendText:()=>this.sendText(),
       pickFile:()=>{ if(!s.key){ this.setState({sheet:null,tab:'settings'}); return this.showToast('Paste your Gemini key in Settings first'); } this.fileRef.current && this.fileRef.current.click(); },
