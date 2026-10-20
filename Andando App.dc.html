@@ -201,7 +201,7 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 <button onClick="{{ openPrototype }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Design demo</span><span style="font-size:12.5px;font-weight:800;color:#5E3B24">Open ›</span></button>
 <button onClick="{{ doSignOut }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700;color:#B4472F">Sign out</span></button>
 </div>
-<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v4</div>
+<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v7</div>
 </div>
 </sc-if>
 
@@ -436,7 +436,7 @@ class Component extends DCLogic {
     this.unsub.push(onSnapshot(query(collection(this.db,'users'),where('partnerUid','==',u.uid)), qs => {
       qs.forEach(d => { if(!this.state.me.partnerUid) setDoc(meRef,{partnerUid:d.id},{merge:true}); });
     }));
-    this.unsub.push(onSnapshot(query(collection(this.db,'items'),where('who','array-contains',u.uid)), qs => this.setState({items:qs.docs.map(d=>({id:d.id,...d.data()}))})));
+    this.unsub.push(onSnapshot(query(collection(this.db,'items'),where('who','array-contains',u.uid)), qs => this.setState({items:qs.docs.map(d=>{ const x={id:d.id,...d.data()}; if(/\bAMZ\b/i.test(x.title||'') && x.status!=='booked'){ x.status='booked'; if(x.source==='calendar' && !this._amzFix?.[x.id]){ (this._amzFix=this._amzFix||{})[x.id]=1; this.F.updateDoc(doc(this.db,'items',x.id),{status:'booked'}).catch(()=>{}); } } return x; })})));
     this.unsub.push(onSnapshot(query(collection(this.db,'checklist'),where('who','array-contains',u.uid)), qs => this.setState({cl:qs.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.at||0)-(b.at||0))})));
   }
   watchPartner(pid){
@@ -651,7 +651,7 @@ class Component extends DCLogic {
       for(let i=0;i<list.length;i++){
         const n = list[i]; const who = n.both && pid ? [u.uid,pid] : [u.uid];
         const codes = i===0 ? (extra.codes||[]) : []; const page = i===0 ? (extra.page||'') : '';
-        const {both, ...rest} = n;
+        const {both, id:_id, ...raw} = n; const rest = {}; Object.keys(raw).forEach(k=>{ if(raw[k]!==undefined) rest[k]=raw[k]; });
         const data = {...rest, who, owner:u.uid, source, codes, page, createdAt:Date.now(), hist:[{by:u.uid,t:`added it ${label}`,at:Date.now()}]};
         if(n.id){ await updateDoc(doc(this.db,'items',n.id), {...rest, who, hist:this.F.arrayUnion({by:u.uid,t:'edited it',at:Date.now()})}); ids.push(null); }
         else { const r = await addDoc(collection(this.db,'items'), data); ids.push(r.id); }
@@ -673,12 +673,15 @@ class Component extends DCLogic {
     const stays = s.items.filter(i=>this.covers(i,d));
     const outs = s.items.filter(i=>i.type==='stay' && i.endDate===d);
     const ins = s.items.filter(i=>i.type==='stay' && i.date===d);
-    const hasMove = on.length>0 || outs.length>0;
-    const gap = hasMove && !stays.length && d>=iso(new Date());
+    const isAmz = i => /\bAMZ\b/i.test(i.title||'');
+    const home = on.some(isAmz);
+    const hasMove = on.some(i=>!isAmz(i)) || outs.length>0;
+    const gap = !home && hasMove && !stays.length && d>=iso(new Date());
     const planned = [...on.filter(i=>i.date===d), ...ins].filter(i=>i.status!=='booked').length;
     return {free, on, stays, outs, gap, pending: free ? 0 : planned + (gap?1:0), any: on.length+stays.length+outs.length};
   }
   links(i){
+    if(/\bAMZ\b/i.test(i.title||'')) return [];
     const L=[]; const place = i.to || i.title; const end = i.endDate || addDays(i.date,1); const n = (i.who||[]).length || 1;
     if(i.type==='flight' && i.number) L.push({label:'Track on Flightradar24', url:`https://www.flightradar24.com/data/flights/${enc(i.number.toLowerCase().replace(/\s/g,''))}`});
     if(i.type==='train') L.push({label:'Live trains on TrainTracker', url:'https://traintracker.live/'});
