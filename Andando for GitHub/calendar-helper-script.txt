@@ -1,0 +1,119 @@
+/**
+ * Andando! · Google Calendar helper
+ * Copies trips and events from ONE Google Calendar (your shared "Maria & me") into Andando!
+ * Runs by itself every 10 minutes once you run setup() one time.
+ */
+
+// ====== 1. CHANGE ONLY THIS LINE: the exact name of your shared calendar ======
+const CALENDAR_NAME = 'Maria & me';
+// ===============================================================================
+
+const PROJECT_ID = 'andando-2a10b';
+const DAYS_AHEAD = 90;
+const ONLY_TRAVEL = true; // true = skip things that don't look like travel or events
+
+const BASE = 'https://firestore.googleapis.com/v1/projects/' + PROJECT_ID + '/databases/(default)/documents';
+
+function setup() {
+  ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('sync').timeBased().everyMinutes(10).create();
+  const n = sync();
+  Logger.log('All set. ' + n + ' items synced. Andando! will now check your calendar every 10 minutes.');
+}
+
+function sync() {
+  const cal = CalendarApp.getCalendarsByName(CALENDAR_NAME)[0];
+  if (!cal) throw new Error('No calendar called "' + CALENDAR_NAME + '". Check the exact name in Google Calendar (left side, under "My calendars" or "Other calendars").');
+  const tz = cal.getTimeZone() || Session.getScriptTimeZone();
+  const uids = listUsers();
+  if (!uids.length) throw new Error('Nobody has signed in to Andando! yet. Sign in on your phone first, then run this again.');
+
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  const until = new Date(now.getTime() + DAYS_AHEAD * 864e5);
+  const seen = {};
+  let count = 0;
+
+  cal.getEvents(now, until).forEach(ev => {
+    const title = ev.getTitle() || '';
+    const desc = (ev.getDescription() || '') + ' ' + (ev.getLocation() || '');
+    const type = detectType(title + ' ' + desc);
+    if (ONLY_TRAVEL && !type) return;
+    const start = ev.getStartTime(), end = ev.getEndTime(), allDay = ev.isAllDayEvent();
+    const date = fmt(start, tz, 'yyyy-MM-dd');
+    let endDate = fmt(end, tz, 'yyyy-MM-dd');
+    if (allDay) { const e = new Date(end.getTime() - 1); endDate = fmt(e, tz, 'yyyy-MM-dd'); if (type === 'stay') endDate = fmt(end, tz, 'yyyy-MM-dd'); }
+    const parts = title.split(/\s*(?:→|->|–| - | a | to )\s*/i).filter(Boolean);
+    const id = 'gcal_' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, ev.getId() + date)).replace(/=+$/, '');
+    seen[id] = true;
+    const live = {
+      type: type || 'other', title: title.slice(0, 90), date: date,
+      time: allDay ? '' : fmt(start, tz, 'HH:mm'),
+      endDate: endDate !== date ? endDate : '', endTime: allDay ? '' : fmt(end, tz, 'HH:mm'),
+      from: parts.length > 1 ? parts[0] : '', to: parts.length > 1 ? parts[parts.length - 1] : (type === 'stay' ? (ev.getLocation() || '') : ''),
+      address: ev.getLocation() || '', who: uids, source: 'calendar', calendarRemoved: false
+    };
+    const booked = /localizador|reserva|booking|confirm|ref[:.\s]|pnr|ticket|billete|entrada/i.test(desc);
+    const created = createDoc(id, Object.assign({}, live, {
+      status: booked ? 'booked' : 'planned', owner: 'calendar', operator: '', number: '', ref: '', seat: '',
+      passengers: [], codes: [], page: '', createdAt: Date.now(),
+      hist: [{ by: 'calendar', t: 'added it', at: Date.now() }]
+    }));
+    if (!created) patchDoc(id, live);
+    count++;
+  });
+
+  // Events deleted from the calendar: Andando! asks before removing them
+  listCalendarItems().forEach(d => {
+    if (!seen[d.id] && d.date >= fmt(now, tz, 'yyyy-MM-dd') && d.date <= fmt(until, tz, 'yyyy-MM-dd')) patchDoc(d.id, { calendarRemoved: true });
+  });
+  return count;
+}
+
+function detectType(t) {
+  if (/vuelo|flight|✈|avi[oó]n|aeropuerto|airport|vueling|ryanair|iberia|easyjet|qatar|emirates|klm|lufthansa|\b[A-Z]{2}\s?\d{3,4}\b/i.test(t)) return 'flight';
+  if (/ferry|barco|boat|bale[aà]ria|trasmed|naviera|lancha/i.test(t)) return 'ferry';
+  if (/\btren\b|\btrain\b|renfe|\bave\b|iryo|ouigo|comboios|sncf|trenitalia|alfa pendular|eurostar/i.test(t)) return 'train';
+  if (/\bbus\b|autob[uú]s|flixbus|alsa\b/i.test(t)) return 'bus';
+  if (/uber|taxi|bolt|cabify|transfer|traslado|recoger|pick ?up/i.test(t)) return 'ride';
+  if (/hotel|airbnb|booking\.com|hostel|alojamiento|apartamento|check-?in|check-?out|dormir/i.test(t)) return 'stay';
+  if (/concert|concierto|\bcine\b|cinema|teatro|theat|museo|museum|festival|partido|\bmatch\b|entradas|tickets|show/i.test(t)) return 'event';
+  if (/→|->/.test(t)) return 'other';
+  return '';
+}
+
+function fmt(d, tz, p) { return Utilities.formatDate(d, tz, p); }
+function headers() { return { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }; }
+function fv(v) {
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(fv) } };
+  if (typeof v === 'number') return { integerValue: String(Math.round(v)) };
+  if (typeof v === 'boolean') return { booleanValue: v };
+  if (v && typeof v === 'object') { const f = {}; Object.keys(v).forEach(k => f[k] = fv(v[k])); return { mapValue: { fields: f } }; }
+  return { stringValue: String(v == null ? '' : v) };
+}
+function fields(o) { const f = {}; Object.keys(o).forEach(k => f[k] = fv(o[k])); return f; }
+function listUsers() {
+  const r = UrlFetchApp.fetch(BASE + '/users?pageSize=10', { headers: headers(), muteHttpExceptions: true });
+  if (r.getResponseCode() !== 200) throw new Error('Could not reach Andando! (' + r.getResponseCode() + '): ' + r.getContentText().slice(0, 200));
+  return (JSON.parse(r.getContentText()).documents || []).map(d => d.name.split('/').pop());
+}
+function createDoc(id, data) {
+  const r = UrlFetchApp.fetch(BASE + '/items/' + id + '?currentDocument.exists=false', {
+    method: 'patch', contentType: 'application/json', headers: headers(), muteHttpExceptions: true, payload: JSON.stringify({ fields: fields(data) })
+  });
+  return r.getResponseCode() === 200;
+}
+function patchDoc(id, data) {
+  const mask = Object.keys(data).map(k => 'updateMask.fieldPaths=' + encodeURIComponent(k)).join('&');
+  UrlFetchApp.fetch(BASE + '/items/' + id + '?' + mask, {
+    method: 'patch', contentType: 'application/json', headers: headers(), muteHttpExceptions: true, payload: JSON.stringify({ fields: fields(data) })
+  });
+}
+function listCalendarItems() {
+  const body = { structuredQuery: { from: [{ collectionId: 'items' }], where: { fieldFilter: { field: { fieldPath: 'source' }, op: 'EQUAL', value: { stringValue: 'calendar' } } } } };
+  const r = UrlFetchApp.fetch(BASE + ':runQuery', { method: 'post', contentType: 'application/json', headers: headers(), muteHttpExceptions: true, payload: JSON.stringify(body) });
+  if (r.getResponseCode() !== 200) return [];
+  return JSON.parse(r.getContentText()).filter(x => x.document).map(x => ({
+    id: x.document.name.split('/').pop(),
+    date: (x.document.fields.date || {}).stringValue || ''
+  }));
+}

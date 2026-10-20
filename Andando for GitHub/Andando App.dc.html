@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Andando!</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FFB23E">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+<script src="firebase-config.js"></script>
+<style>
+html,body{margin:0;height:100%;background:#F1EADF;font-family:'Nunito',system-ui,sans-serif;color:#2A2622;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+a{color:#8A5A3B;text-decoration:none}a:hover{color:#5E3B24}
+input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,textarea::placeholder{color:#B3A99C}
+@keyframes andSpin{to{transform:rotate(360deg)}}
+@keyframes andPulse{0%{transform:scale(.85);opacity:.5}100%{transform:scale(1.8);opacity:0}}
+*::-webkit-scrollbar{width:0;height:0}*{scrollbar-width:none}
+</style>
+</helmet>
+<div style="height:100dvh;display:flex;justify-content:center;background:#F1EADF">
+<div style="position:relative;width:100%;max-width:480px;height:100dvh;background:#FFFCEE;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 40px rgba(80,55,20,.12)">
+
+<sc-if value="{{ isBoot }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px">
+<img src="icon-192.png" alt="Andando!" style="width:96px;height:96px;border-radius:28px">
+{{ spinner }}
+</div>
+</sc-if>
+
+<sc-if value="{{ isConfig }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:48px 22px 30px">
+<div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Connect to Firebase</div>
+<div style="font-size:14.5px;color:#5A524A;line-height:1.5">Paste the block from Firebase → Project settings → Your apps (it starts with const firebaseConfig).</div>
+<sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:13.5px;font-weight:700;color:#8E3F2A;background:#FCE3DC;border-radius:14px;padding:10px 14px">{{ err }}</div></sc-if>
+<textarea value="{{ cfgDraft }}" onChange="{{ setCfgDraft }}" placeholder="const firebaseConfig = { apiKey: … };" style="min-height:180px;border:1.5px solid #E2D9CB;border-radius:16px;padding:14px;font:500 13px 'DM Mono',monospace;background:#FFFFFF;resize:vertical"></textarea>
+<button onClick="{{ saveCfg }}" style="all:unset;cursor:pointer;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:#8A5A3B;color:#FFFFFF">Save and restart</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ isSignin }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;display:flex;flex-direction:column;padding:56px 24px 34px;gap:18px">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center">
+<img src="icon-512.png" alt="Andando!" style="width:132px;height:132px;border-radius:34px;box-shadow:0 18px 36px -14px rgba(194,54,111,.45)">
+<div style="font-size:38px;font-weight:800;letter-spacing:-.02em;line-height:1">Andando!</div>
+<div style="font-size:16px;color:#5A524A;line-height:1.45;max-width:280px;text-wrap:pretty">Every ticket, ride and bed for the two of you, in one place. Just say it or drop in a PDF.</div>
+</div>
+<sc-if value="{{ hasErr }}" hint-placeholder-val="{{ false }}"><div style="font-size:13.5px;font-weight:700;color:#8E3F2A;background:#FCE3DC;border-radius:14px;padding:10px 14px;line-height:1.45">{{ err }}</div></sc-if>
+<button onClick="{{ signIn }}" style="all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:#FFFFFF;border:1.5px solid #E2D9CB">
+<span style="width:24px;height:24px;border-radius:50%;background:#F1EBE1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#3C5FA8">G</span>Continue with Google</button>
+<div style="font-size:12px;color:#8A8076;text-align:center;line-height:1.45">Only to sign in and sync with your partner. Andando! never reads your email.</div>
+<button onClick="{{ openConfig }}" style="all:unset;cursor:pointer;text-align:center;font-size:12px;font-weight:800;color:#A39888;padding:4px">Firebase settings</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;padding:14px 16px 0;display:flex;align-items:center;justify-content:space-between;gap:10px">
+<button onClick="{{ openLinkOrSettings }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;background:#FFF2B3;border-radius:16px;padding:5px 12px 5px 5px;min-width:0">
+<img src="icon-192.png" alt="" style="width:32px;height:32px;border-radius:10px;flex:none">
+<span style="display:flex;flex-direction:column;min-width:0"><span style="font-size:13.5px;font-weight:800;color:#5E3B24;line-height:1.15;white-space:nowrap">{{ hello }}</span><span style="font-size:11px;font-weight:700;color:#5E3B24;opacity:.8;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ syncLine }}</span></span>
+</button>
+<button onClick="{{ goSettings }}" style="all:unset;cursor:pointer;width:44px;height:44px;flex:none;border-radius:16px;background:#FFFFFF;border:1.5px solid #F1EBE1;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:18px">⚙</button>
+</div>
+
+<sc-if value="{{ isUpcoming }}" hint-placeholder-val="{{ true }}">
+<div style="flex:1;min-height:0;display:flex;flex-direction:column">
+<div style="flex:none;display:flex;align-items:center;gap:4px;padding:12px 8px 2px">
+<button onClick="{{ prevWeek }}" style="all:unset;cursor:pointer;width:22px;height:66px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#A39888">‹</button>
+<sc-for list="{{ strip }}" as="d" hint-placeholder-count="7">
+<button onClick="{{ d.pick }}" style="all:unset;cursor:pointer;flex:1 1 0;min-width:0;height:66px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:16px;background:{{ d.bg }};color:{{ d.fg }};border:{{ d.bd }}">
+<span style="font-size:11px;font-weight:700;opacity:.8">{{ d.dow }}</span>
+<span style="font-size:18px;font-weight:800;line-height:1.1">{{ d.num }}</span>
+<span style="font-size:10.5px;font-weight:800;height:13px;line-height:13px;white-space:nowrap">{{ d.mark }}</span>
+</button>
+</sc-for>
+<button onClick="{{ nextWeek }}" style="all:unset;cursor:pointer;width:22px;height:66px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#A39888">›</button>
+</div>
+<div style="flex:none;padding:14px 20px 6px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+<div style="min-width:0"><div style="font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1">{{ day.title }}</div><div style="font-size:13px;font-weight:700;color:#8A8076;margin-top:2px">{{ day.sub }}</div></div>
+<sc-if value="{{ day.canFree }}" hint-placeholder-val="{{ false }}">
+<button onClick="{{ toggleFree }}" style="all:unset;cursor:pointer;flex:none;white-space:nowrap;font-size:12px;font-weight:800;padding:8px 11px;border-radius:12px;background:{{ day.freeBg }};color:{{ day.freeFg }};border:1.5px solid {{ day.freeBd }}">{{ day.freeLabel }}</button>
+</sc-if>
+</div>
+<sc-if value="{{ day.isFree }}" hint-placeholder-val="{{ false }}"><div style="flex:none;margin:0 16px 4px;font-size:12.5px;font-weight:700;color:#7A7168;background:#F4EEE5;border-radius:12px;padding:8px 12px">Going with the flow. Nothing to sort for this day.</div></sc-if>
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 16px 12px">
+<sc-for list="{{ dayItems }}" as="it" hint-placeholder-count="3">
+<div onClick="{{ it.open }}" style="cursor:pointer;flex:none;display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:12px;align-items:center;padding:9px 10px 9px 9px;border-radius:22px;background:{{ it.cardBg }};border:{{ it.border }}">
+<span style="width:58px;height:58px;border-radius:17px;background:{{ it.tileBg }};color:{{ it.tileFg }};display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px">
+<span style="font:500 14px 'DM Mono',monospace;letter-spacing:-.02em">{{ it.time }}</span>
+<span style="font-size:9px;font-weight:800;letter-spacing:.05em">{{ it.kind }}</span>
+</span>
+<span style="min-width:0;display:flex;flex-direction:column;gap:2px">
+<span style="font-size:15.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.title }}</span>
+<span style="font-size:12.5px;color:{{ it.subFg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.sub }}</span>
+</span>
+<span style="font-size:12px;font-weight:800;padding:8px 11px;border-radius:12px;background:{{ it.actBg }};color:{{ it.actFg }};white-space:nowrap">{{ it.action }}</span>
+</div>
+</sc-for>
+<sc-if value="{{ dayEmpty }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:10px;padding:34px 20px;border-radius:24px;background:#FFFFFF;border:1.5px solid #F1EBE1;text-align:center">
+<div style="font-size:16px;font-weight:800">Nothing planned</div>
+<div style="font-size:13px;color:#8A8076;max-width:240px;line-height:1.45">Tap + to say it, drop in a PDF or screenshot, or plan it quickly.</div>
+<button onClick="{{ openAdd }}" style="all:unset;cursor:pointer;font-size:14px;font-weight:800;padding:10px 16px;border-radius:14px;background:#FFF2B3;color:#5E3B24">+ Plan this day</button>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{ hasElsewhere }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;display:flex;align-items:center;gap:8px;padding:8px 16px 10px">
+<span style="font-size:12px;font-weight:800;color:#8A8076;flex:none;white-space:nowrap">Also to sort</span>
+<div style="display:flex;gap:6px;overflow-x:auto">
+<sc-for list="{{ elsewhere }}" as="e" hint-placeholder-count="2"><button onClick="{{ e.pick }}" style="all:unset;cursor:pointer;flex:none;white-space:nowrap;font-size:12.5px;font-weight:800;padding:7px 11px;border-radius:12px;background:#FCE3DC;color:#B4472F">{{ e.label }}</button></sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTickets }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:14px 16px 20px">
+<div style="flex:none;padding:0 4px 4px"><div style="font-size:13px;font-weight:700;color:#8A8076">Ready to scan · works offline</div><div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Tickets</div></div>
+<sc-for list="{{ tickets }}" as="t" hint-placeholder-count="2">
+<button onClick="{{ t.show }}" style="all:unset;cursor:pointer;flex:none;display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:24px;overflow:hidden">
+<span style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;background:{{ t.tileBg }};color:{{ t.tileFg }};font-size:12px;font-weight:800;letter-spacing:.04em;white-space:nowrap"><span>{{ t.kind }} · {{ t.when }}</span><span>{{ t.count }}</span></span>
+<span style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;gap:12px">
+<span style="min-width:0;flex:1"><span style="display:block;font-size:19px;line-height:1.2;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.title }}</span><span style="display:block;font-size:12.5px;color:#7A7168;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.sub }}</span></span>
+<span style="flex:none;white-space:nowrap;font-size:13px;font-weight:800;padding:10px 14px;border-radius:14px;background:#8A5A3B;color:#FFFFFF">Show</span>
+</span>
+</button>
+</sc-for>
+<sc-if value="{{ noTickets }}" hint-placeholder-val="{{ true }}"><div style="flex:none;font-size:14px;color:#7A7168;line-height:1.5;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:18px">No tickets yet. Add a PDF or screenshot with + and Andando! copies the QR or barcode here, ready to scan.</div></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ isTrip }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:14px 16px 22px">
+<div style="flex:none;padding:0 4px"><div style="font-size:13px;font-weight:700;color:#8A8076">Next 60 days</div><div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Trip</div></div>
+<div style="flex:none;display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;justify-content:space-between;padding:0 4px;gap:8px"><span style="font-size:17px;font-weight:800">Entry documents</span><span style="font-size:11.5px;font-weight:800;color:#8A8076;white-space:nowrap">{{ entryWhen }}</span></div>
+<sc-for list="{{ entry }}" as="c" hint-placeholder-count="1">
+<div style="display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;overflow:hidden">
+<div style="padding:12px 16px 6px;font-size:15px;font-weight:800">{{ c.country }}</div>
+<sc-for list="{{ c.needs }}" as="r" hint-placeholder-count="2">
+<div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 16px;border-top:1.5px solid #F7F2EA">
+<span style="min-width:0"><span style="display:block;font-size:14px;font-weight:800">{{ r.title }}</span><span style="display:block;font-size:12px;color:#7A7168;line-height:1.4;margin-top:1px;text-wrap:pretty">{{ r.detail }}</span></span>
+<span style="font-size:11.5px;font-weight:800;padding:5px 9px;border-radius:9px;background:{{ r.bg }};color:{{ r.fg }};white-space:nowrap">{{ r.badge }}</span>
+</div>
+</sc-for>
+</div>
+</sc-for>
+<button onClick="{{ checkEntry }}" style="all:unset;cursor:pointer;align-self:flex-start;font-size:13.5px;font-weight:800;padding:10px 14px;border-radius:12px;background:#FFF2B3;color:#5E3B24">{{ entryBtn }}</button>
+<div style="font-size:11.5px;color:#8A8076;line-height:1.45;padding:0 6px">For Spanish passports. Gemini summarises the rules for the countries in your plans; always confirm on the official government site, as rules change.</div>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;gap:8px">
+<span style="font-size:17px;font-weight:800;padding:0 4px">Checklist</span>
+<div style="display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:4px 0">
+<sc-for list="{{ checklist }}" as="k" hint-placeholder-count="2">
+<div style="display:flex;align-items:center;gap:12px;padding:6px 10px 6px 16px;min-height:44px">
+<button onClick="{{ k.toggle }}" style="all:unset;cursor:pointer;width:24px;height:24px;flex:none;border-radius:8px;box-sizing:border-box;border:{{ k.boxBd }};background:{{ k.boxBg }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800">{{ k.tick }}</button>
+<span style="flex:1;font-size:14.5px;font-weight:700;color:{{ k.fg }};text-decoration:{{ k.deco }}">{{ k.t }}</span>
+<button onClick="{{ k.remove }}" style="all:unset;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:#A39888;font-weight:800">✕</button>
+</div>
+</sc-for>
+<div style="display:flex;gap:8px;padding:8px 12px 10px">
+<input value="{{ clText }}" onChange="{{ setClText }}" placeholder="Add something important…" style="all:unset;flex:1;min-width:0;font-size:14.5px;font-weight:700;background:#F7F2EA;border-radius:14px;padding:11px 14px">
+<button onClick="{{ addCl }}" style="all:unset;cursor:pointer;font-size:14px;font-weight:800;padding:11px 14px;border-radius:14px;background:#8A5A3B;color:#FFFFFF">Add</button>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;display:flex;padding-top:6px"><iframe src="Travel%20Map%20Options.html?embed=d&amp;user=me&amp;live=1" title="Your world" style="border:0;width:100%;height:100%;display:block;background:#FFFCEE"></iframe></div>
+</sc-if>
+
+<sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:14px 16px 24px">
+<div style="flex:none;padding:0 4px"><div style="font-size:13px;font-weight:700;color:#8A8076">{{ email }}</div><div style="font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1">Settings</div></div>
+<div style="flex:none;display:flex;flex-direction:column;gap:10px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:16px">
+<div style="font-size:12px;font-weight:800;color:#8A8076;letter-spacing:.04em">TRAVEL PARTNER</div>
+<div style="font-size:15px;font-weight:800">{{ partnerLine }}</div>
+<sc-if value="{{ notLinked }}" hint-placeholder-val="{{ true }}"><button onClick="{{ sendInvite }}" style="all:unset;cursor:pointer;align-self:flex-start;font-size:13.5px;font-weight:800;padding:10px 14px;border-radius:12px;background:#8A5A3B;color:#FFFFFF">Send invite link</button></sc-if>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;gap:10px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:16px">
+<div style="font-size:12px;font-weight:800;color:#8A8076;letter-spacing:.04em">TICKET READING · GEMINI KEY</div>
+<div style="font-size:13px;color:#7A7168;line-height:1.45">{{ keyLine }}</div>
+<input type="password" value="{{ keyDraft }}" onChange="{{ setKeyDraft }}" placeholder="Paste your key (starts with AQ.)" style="all:unset;font:500 14px 'DM Mono',monospace;background:#F7F2EA;border-radius:14px;padding:12px 14px">
+<div style="display:flex;gap:8px"><button onClick="{{ saveKey }}" style="all:unset;cursor:pointer;font-size:13.5px;font-weight:800;padding:10px 14px;border-radius:12px;background:#8A5A3B;color:#FFFFFF">Save key</button><button onClick="{{ testKey }}" style="all:unset;cursor:pointer;font-size:13.5px;font-weight:800;padding:10px 14px;border-radius:12px;background:#F1EBE1">Test it</button></div>
+</div>
+<div style="flex:none;display:flex;flex-direction:column;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:6px 0">
+<button onClick="{{ exportBackup }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Backup</span><span style="font-size:12.5px;font-weight:800;color:#5E3B24">Export all trips ›</span></button>
+<div style="display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Google Calendar</span><span style="font-size:12.5px;color:#7A7168">{{ calLine }}</span></div>
+<div style="display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Email access</span><span style="font-size:12.5px;color:#7A7168">None</span></div>
+<button onClick="{{ openPrototype }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Design demo</span><span style="font-size:12.5px;font-weight:800;color:#5E3B24">Open ›</span></button>
+<button onClick="{{ doSignOut }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700;color:#B4472F">Sign out</span></button>
+</div>
+<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v6</div>
+</div>
+</sc-if>
+
+<div style="flex:none;height:72px;display:grid;grid-template-columns:1fr 1fr 72px 1fr 1fr;align-items:center;background:#FFFFFF;border-top:1.5px solid #F1EBE1;padding:0 4px">
+<sc-for list="{{ navL }}" as="n" hint-placeholder-count="2"><button onClick="{{ n.go }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;height:58px;justify-content:center"><span style="width:52px;height:28px;border-radius:14px;background:{{ n.bg }};display:flex;align-items:center;justify-content:center;font:500 12px 'DM Mono',monospace;color:{{ n.fg }}">{{ n.glyph }}</span><span style="font-size:11.5px;font-weight:800">{{ n.label }}</span></button></sc-for>
+<button onClick="{{ openAdd }}" style="all:unset;cursor:pointer;justify-self:center;width:58px;height:58px;border-radius:21px;background:#8A5A3B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:600;box-shadow:0 10px 20px -8px rgba(138,90,59,.45)">+</button>
+<sc-for list="{{ navR }}" as="n" hint-placeholder-count="2"><button onClick="{{ n.go }}" style="all:unset;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;height:58px;justify-content:center"><span style="width:52px;height:28px;border-radius:14px;background:{{ n.bg }};display:flex;align-items:center;justify-content:center;font:500 12px 'DM Mono',monospace;color:{{ n.fg }}">{{ n.glyph }}</span><span style="font-size:11.5px;font-weight:800">{{ n.label }}</span></button></sc-for>
+</div>
+</sc-if>
+
+<input type="file" accept="application/pdf,image/*" ref="{{ fileRef }}" onChange="{{ onFile }}" style="display:none">
+<input type="file" accept="image/*" ref="{{ codeRef }}" onChange="{{ onCodeFile }}" style="display:none">
+
+<sc-if value="{{ hasSheet }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;z-index:5">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(42,38,34,.4)"></div>
+<div style="position:relative;background:#FFFCEE;border-radius:32px 32px 0 0;padding:10px 18px 30px;display:flex;flex-direction:column;gap:14px;max-height:88%;overflow-y:auto;box-sizing:border-box">
+<div style="flex:none;align-self:center;width:38px;height:5px;border-radius:3px;background:#DDD3C4"></div>
+
+<sc-if value="{{ sAdd }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.01em">Add to {{ addLabel }}</div>
+<button onClick="{{ startVoice }}" style="all:unset;cursor:pointer;flex:none;display:flex;align-items:center;gap:14px;background:#8A5A3B;color:#FFFFFF;border-radius:24px;padding:16px">
+<span style="width:48px;height:48px;flex:none;border-radius:18px;background:#FFFFFF;display:flex;align-items:center;justify-content:center"><span style="width:12px;height:20px;border-radius:6px;background:#8A5A3B"></span></span>
+<span><span style="display:block;font-size:17px;font-weight:800">Say it</span><span style="display:block;font-size:13px;opacity:.85;margin-top:1px">English or Spanish, detected for you</span></span></button>
+<div style="flex:none;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+<button onClick="{{ pickFile }}" style="all:unset;cursor:pointer;background:#E6EEFB;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:92px;box-sizing:border-box"><span style="font-size:12px;font-weight:800;color:#3C5FA8">PDF</span><span style="font-size:15px;font-weight:800;line-height:1.25">Ticket or booking</span></button>
+<button onClick="{{ pickFile }}" style="all:unset;cursor:pointer;background:#FFF1D6;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:92px;box-sizing:border-box"><span style="font-size:12px;font-weight:800;color:#93650F">IMAGE</span><span style="font-size:15px;font-weight:800;line-height:1.25">Screenshot</span></button>
+</div>
+<button onClick="{{ openQuick }}" style="all:unset;cursor:pointer;flex:none;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:22px;padding:15px 18px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:15px;font-weight:800">Quick plan</span><span style="font-size:13px;color:#8A8076">type it yourself</span></button>
+</sc-if>
+
+<sc-if value="{{ sVoice }}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{ vRec }}" hint-placeholder-val="{{ true }}">
+<div style="display:flex;flex-direction:column;align-items:center;gap:20px;padding:16px 0 4px">
+<div style="font-size:13px;font-weight:800;color:#8A8076">Listening… speak English or Spanish</div>
+<div style="position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center">{{ pulse }}<span style="position:relative;width:80px;height:80px;border-radius:30px;background:#8A5A3B"></span></div>
+<button onClick="{{ stopVoice }}" style="all:unset;cursor:pointer;font-size:15.5px;font-weight:800;padding:14px 28px;border-radius:18px;background:#2A2622;color:#FFFFFF">Done</button>
+</div>
+</sc-if>
+<sc-if value="{{ vThink }}" hint-placeholder-val="{{ false }}"><div style="display:flex;align-items:center;gap:14px;padding:26px 4px">{{ spinner }}<span style="font-size:15px;font-weight:700;color:#5A524A">Understanding your plan…</span></div></sc-if>
+<div style="display:flex;flex-direction:column;gap:8px;border-top:1.5px solid #EDE5D9;padding-top:12px">
+<span style="font-size:12px;font-weight:800;color:#8A8076">Or type it the way you'd say it</span>
+<div style="display:flex;gap:8px"><input value="{{ sayText }}" onChange="{{ setSayText }}" placeholder="Tren a Lisboa el viernes a las 9" style="all:unset;flex:1;min-width:0;font-size:15px;font-weight:700;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:14px;padding:12px 14px"><button onClick="{{ sendText }}" style="all:unset;cursor:pointer;font-size:14px;font-weight:800;padding:12px 14px;border-radius:14px;background:#8A5A3B;color:#FFFFFF">Add</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{ sQuick }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:22px;font-weight:800;letter-spacing:-.01em">{{ qTitle }}</div>
+<div style="flex:none;display:flex;flex-wrap:wrap;gap:8px">
+<sc-for list="{{ qTypes }}" as="t" hint-placeholder-count="8"><button onClick="{{ t.pick }}" style="all:unset;cursor:pointer;font-size:14px;font-weight:800;padding:9px 14px;border-radius:14px;background:{{ t.bg }};color:{{ t.fg }}">{{ t.label }}</button></sc-for>
+</div>
+<input value="{{ q.title }}" onChange="{{ qSet.title }}" placeholder="{{ qPh }}" style="all:unset;font-size:17px;font-weight:700;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:18px;padding:14px 16px">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:800;color:#8A8076">DATE<input type="date" value="{{ q.date }}" onChange="{{ qSet.date }}" style="all:unset;font-size:15px;font-weight:700;color:#2A2622;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:14px;padding:11px 12px"></label>
+<label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:800;color:#8A8076">{{ qTimeLabel }}<input type="time" value="{{ q.time }}" onChange="{{ qSet.time }}" style="all:unset;font-size:15px;font-weight:700;color:#2A2622;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:14px;padding:11px 12px"></label>
+</div>
+<sc-if value="{{ qIsStay }}" hint-placeholder-val="{{ false }}"><label style="display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:800;color:#8A8076">CHECKOUT DATE<input type="date" value="{{ q.endDate }}" onChange="{{ qSet.endDate }}" style="all:unset;font-size:15px;font-weight:700;color:#2A2622;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:14px;padding:11px 12px"></label></sc-if>
+<input value="{{ q.ref }}" onChange="{{ qSet.ref }}" placeholder="Booking reference (optional)" style="all:unset;font-size:15px;font-weight:700;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:14px;padding:12px 14px">
+<div style="display:flex;flex-direction:column;gap:2px">
+<sc-for list="{{ qChecks }}" as="c" hint-placeholder-count="2"><button onClick="{{ c.toggle }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px 2px"><span style="width:24px;height:24px;border-radius:8px;box-sizing:border-box;border:{{ c.bd }};background:{{ c.bg }};color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-weight:800">{{ c.tick }}</span><span style="font-size:14.5px;font-weight:800">{{ c.label }}</span></button></sc-for>
+</div>
+<button onClick="{{ saveQuick }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:{{ qSaveBg }};color:#FFFFFF">{{ qSaveLabel }}</button>
+</sc-if>
+
+<sc-if value="{{ sDup }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;background:#FCE3DC;border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:6px">
+<div style="font-size:12px;font-weight:800;color:#B4472F;letter-spacing:.04em">WAIT, THIS LOOKS ALREADY IN ANDANDO!</div>
+<div style="font-size:17px;font-weight:800;line-height:1.35;text-wrap:pretty">{{ dupText }}</div>
+</div>
+<div style="flex:none;display:flex;gap:10px">
+<button onClick="{{ dupShow }}" style="all:unset;cursor:pointer;flex:1;text-align:center;font-size:15px;font-weight:800;padding:15px;border-radius:18px;background:#8A5A3B;color:#FFFFFF">Show it</button>
+<button onClick="{{ dupAdd }}" style="all:unset;cursor:pointer;text-align:center;font-size:14.5px;font-weight:800;padding:15px 18px;border-radius:18px;background:#F1EBE1">Add anyway</button>
+</div>
+</sc-if>
+
+<sc-if value="{{ sLink }}" hint-placeholder-val="{{ false }}">
+<div style="font-size:24px;font-weight:800;letter-spacing:-.01em;line-height:1.15">Link with your travel partner</div>
+<div style="font-size:14.5px;color:#5A524A;line-height:1.5;text-wrap:pretty">Send this link to Maria. When she opens it and signs in, your shared trips sync between both phones. Solo plans stay private.</div>
+<button onClick="{{ sendInvite }}" style="all:unset;cursor:pointer;flex:none;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:#8A5A3B;color:#FFFFFF">Send invite link</button>
+<button onClick="{{ closeSheet }}" style="all:unset;cursor:pointer;text-align:center;font-size:13.5px;font-weight:800;padding:6px;color:#8A8076">Later</button>
+</sc-if>
+
+<sc-if value="{{ sDetail }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font-size:12px;font-weight:800;letter-spacing:.06em;padding:5px 11px;border-radius:10px;background:{{ d.tileBg }};color:{{ d.tileFg }}">{{ d.kind }}</span>
+<span style="font-size:11.5px;font-weight:800;padding:5px 10px;border-radius:10px;background:{{ d.pillBg }};color:{{ d.pillFg }}">{{ d.pill }}</span>
+</div>
+<div><div style="font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-.015em;text-wrap:pretty">{{ d.title }}</div><div style="font-size:14px;color:#7A7168;margin-top:4px">{{ d.when }}</div></div>
+<sc-if value="{{ d.hasCodes }}" hint-placeholder-val="{{ false }}"><button onClick="{{ d.showCode }}" style="all:unset;cursor:pointer;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:#8A5A3B;color:#FFFFFF">Show QR / ticket</button></sc-if>
+<sc-if value="{{ d.hasFacts }}" hint-placeholder-val="{{ false }}">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:16px">
+<sc-for list="{{ d.facts }}" as="f" hint-placeholder-count="4"><div style="min-width:0"><div style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em">{{ f.k }}</div><div style="font-size:15px;font-weight:700;margin-top:1px;overflow-wrap:anywhere">{{ f.v }}</div></div></sc-for>
+</div>
+</sc-if>
+<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+<span style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em;margin-right:2px">TRAVELLERS</span>
+<span style="font-size:12.5px;font-weight:800;padding:6px 10px;border-radius:11px;background:#FFF2B3;color:#5E3B24">✓ You</span>
+<sc-if value="{{ d.canPartner }}" hint-placeholder-val="{{ false }}"><button onClick="{{ d.togglePartner }}" style="all:unset;cursor:pointer;font-size:12.5px;font-weight:800;padding:6px 10px;border-radius:11px;background:{{ d.pBg }};color:{{ d.pFg }};border:{{ d.pBd }}">{{ d.pLabel }}</button></sc-if>
+</div>
+<sc-if value="{{ d.hasLinks }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;gap:8px">
+<sc-for list="{{ d.links }}" as="l" hint-placeholder-count="2"><a href="{{ l.url }}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:16px;padding:13px 16px;color:#2A2622;font-size:14.5px;font-weight:800"><span>{{ l.label }}</span><span style="color:#8A5A3B">↗</span></a></sc-for>
+</div>
+</sc-if>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+<button onClick="{{ d.toggleBooked }}" style="all:unset;cursor:pointer;text-align:center;font-size:14px;font-weight:800;padding:13px 8px;border-radius:16px;background:{{ d.bookBg }};color:{{ d.bookFg }}">{{ d.bookLabel }}</button>
+<button onClick="{{ d.addCode }}" style="all:unset;cursor:pointer;text-align:center;font-size:14px;font-weight:800;padding:13px 8px;border-radius:16px;background:#F1EBE1">Add QR screenshot</button>
+<button onClick="{{ d.edit }}" style="all:unset;cursor:pointer;text-align:center;font-size:14px;font-weight:800;padding:13px 8px;border-radius:16px;background:#F1EBE1">Edit</button>
+<button onClick="{{ d.remove }}" style="all:unset;cursor:pointer;text-align:center;font-size:14px;font-weight:800;padding:13px 8px;border-radius:16px;background:#FCE3DC;color:#B4472F">Delete</button>
+</div>
+<sc-if value="{{ d.hasHist }}" hint-placeholder-val="{{ false }}">
+<div style="background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:20px;padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+<span style="font-size:11px;font-weight:800;color:#A39888;letter-spacing:.05em">CHANGES</span>
+<sc-for list="{{ d.hist }}" as="h" hint-placeholder-count="2"><div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;line-height:1.4"><span style="font-weight:700">{{ h.line }}</span><span style="flex:none;color:#8A8076;font-weight:700;white-space:nowrap">{{ h.when }}</span></div></sc-for>
+</div>
+</sc-if>
+</sc-if>
+
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasTicket }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:7;background:#FFFFFF;display:flex;flex-direction:column;padding:40px 18px 26px;gap:14px;box-sizing:border-box">
+<div style="display:flex;align-items:center;justify-content:space-between">
+<button onClick="{{ closeTicket }}" style="all:unset;cursor:pointer;width:44px;height:44px;border-radius:16px;background:#F1EBE1;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800">✕</button>
+<span style="font-size:12px;font-weight:800;padding:6px 11px;border-radius:10px;background:{{ tk.tileBg }};color:{{ tk.tileFg }};letter-spacing:.05em;white-space:nowrap">{{ tk.kind }} · OFFLINE</span>
+</div>
+<div><div style="font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1">{{ tk.title }}</div><div style="font-size:14px;color:#7A7168;margin-top:4px">{{ tk.sub }}</div></div>
+<sc-if value="{{ tk.multi }}" hint-placeholder-val="{{ false }}"><div style="display:flex;background:#F1EBE1;border-radius:16px;padding:4px;gap:4px">
+<sc-for list="{{ tk.tabs }}" as="p" hint-placeholder-count="2"><button onClick="{{ p.pick }}" style="all:unset;cursor:pointer;flex:1;text-align:center;font-size:14px;font-weight:800;padding:10px;border-radius:12px;background:{{ p.bg }}">{{ p.label }}</button></sc-for>
+</div></sc-if>
+<div role="img" aria-label="Ticket code" style="flex:1;min-height:0;background:center / contain no-repeat url({{ tk.img }});image-rendering:pixelated"></div>
+<div style="text-align:center;font-size:12.5px;font-weight:700;color:#8A8076">Turn your screen brightness up · works with no signal</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasBusy }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:20px;right:20px;bottom:96px;z-index:8;background:#FFFFFF;border:1.5px solid #F1EBE1;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 12px 28px -12px rgba(0,0,0,.3)">{{ spinner }}<span style="font-size:14px;font-weight:700;color:#5A524A">{{ busy }}</span></div>
+</sc-if>
+
+<sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:20px;right:20px;bottom:96px;z-index:9;background:#2A2622;color:#FFFFFF;border-radius:16px;padding:13px 16px;font-size:14px;font-weight:700;box-shadow:0 10px 24px -10px rgba(0,0,0,.4);display:flex;align-items:center;gap:12px"><span style="flex:1;line-height:1.4">{{ toast }}</span><sc-if value="{{ toastUndo }}" hint-placeholder-val="{{ false }}"><button onClick="{{ doUndo }}" style="all:unset;cursor:pointer;flex:none;font-size:14px;font-weight:800;color:#FFE07A;padding:4px 6px">Undo</button></sc-if></div>
+</sc-if>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const FB = 'https://www.gstatic.com/firebasejs/10.12.2/';
+const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/';
+const GAPI = 'https://generativelanguage.googleapis.com/v1beta/';
+const MODEL_FALLBACKS = ['gemini-flash-lite-latest','gemini-flash-latest','gemini-3.8-flash','gemini-3.0-flash','gemini-3-flash','gemini-2.5-flash'];
+const T = {
+  flight:{bg:'#E6EEFB',fg:'#3C5FA8',k:'FLIGHT',l:'Flight'}, train:{bg:'#FFF1D6',fg:'#93650F',k:'TRAIN',l:'Train'},
+  bus:{bg:'#FCE8EF',fg:'#A8466A',k:'BUS',l:'Bus'}, ferry:{bg:'#DDF1F3',fg:'#1D7480',k:'FERRY',l:'Ferry'},
+  ride:{bg:'#E9F3E2',fg:'#4E7A2C',k:'RIDE',l:'Ride'}, stay:{bg:'#EEE7FA',fg:'#6A4FA8',k:'STAY',l:'Stay'},
+  event:{bg:'#FDE3EE',fg:'#A33A6B',k:'EVENT',l:'Event'}, other:{bg:'#ECE7FB',fg:'#5B4FA8',k:'PLAN',l:'Other'}
+};
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DOWL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const pad = n => String(n).padStart(2,'0');
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const dt = s => new Date(s+'T12:00:00');
+const addDays = (s,n) => { const d = dt(s); d.setDate(d.getDate()+n); return iso(d); };
+const b64 = buf => { let s=''; const b=new Uint8Array(buf); for(let i=0;i<b.length;i+=0x8000) s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000)); return btoa(s); };
+const enc = encodeURIComponent;
+const PROMPT = today => `Today is ${today} (${DOWL[dt(today).getDay()]}). You help two Spanish travellers log their travel. Extract every booking, plan or event from the input. It may be a ticket, booking confirmation, screenshot, voice note or typed note, in Spanish, English or any language.
+Return ONLY JSON: {"heard":"transcript if audio, else empty","items":[{"type":"flight|train|bus|ferry|ride|stay|event|other","title":"short, e.g. 'Lisboa → Barcelona', hotel name, or event name","from":"","to":"city or place","date":"YYYY-MM-DD","time":"HH:MM 24h or empty","endDate":"YYYY-MM-DD checkout/return or empty","endTime":"HH:MM or empty","operator":"airline/company/platform","number":"flight or train number like TP1032","ref":"booking reference","seat":"","address":"","passengers":["names"],"booked":true if it is a confirmation or ticket, false if only an intention}]}
+Resolve relative dates (mañana, el viernes, next Tuesday) from today. A return trip is two items. If nothing travel-related is found return {"heard":"","items":[]}.`;
+
+class Component extends DCLogic {
+  state = { phase:'boot', err:'', cfgDraft:'', user:null, me:{}, partner:null, items:[], cl:[], tab:'upcoming',
+    start: iso(new Date()), sel: iso(new Date()), sheet:null, detailId:null, toast:null, toastUndo:false, busy:'',
+    key: (()=>{ try{ return localStorage.getItem('andando-gemini')||''; }catch(e){ return ''; } })(), keyDraft:'',
+    voice:'rec', sayText:'', q:null, dup:null, ticketId:null, codeIdx:0, clText:'',
+    entry: (()=>{ try{ return JSON.parse(localStorage.getItem('andando-entry')||'null'); }catch(e){ return null; } })() };
+  fileRef = React.createRef(); codeRef = React.createRef(); unsub = [];
+
+  componentDidMount(){
+    try{ if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){}
+    this.boot();
+    setTimeout(()=>{ this.loadPdfjs().catch(()=>{}); if(this.state.key) this.pickModel(false).catch(()=>{}); }, 1500);
+  }
+  componentWillUnmount(){ this.unsub.forEach(f=>{ try{f();}catch(e){} }); clearTimeout(this.tt); }
+
+  cfg(){ try{ const s = localStorage.getItem('andando-fbcfg'); if(s) return JSON.parse(s); }catch(e){} return window.ANDANDO_FIREBASE || null; }
+  async boot(){
+    for(let i=0;i<30 && !window.ANDANDO_FIREBASE && !localStorage.getItem('andando-fbcfg');i++) await new Promise(r=>setTimeout(r,100));
+    const cfg = this.cfg();
+    if(!cfg) return this.setState({phase:'config'});
+    try{
+      const [app, auth, fs] = await Promise.all([import(FB+'firebase-app.js'), import(FB+'firebase-auth.js'), import(FB+'firebase-firestore.js')]);
+      this.A = auth; this.F = fs;
+      const fbApp = app.getApps().length ? app.getApp() : app.initializeApp(cfg);
+      this.auth = auth.getAuth(fbApp);
+      try{ this.db = fs.initializeFirestore(fbApp,{localCache:fs.persistentLocalCache({tabManager:fs.persistentMultipleTabManager()})}); }catch(e){ this.db = fs.getFirestore(fbApp); }
+      auth.onAuthStateChanged(this.auth, u => u ? this.onUser(u) : this.setState({phase:'signin', user:null}));
+    }catch(e){ this.setState({phase:'config', err:'Could not start: '+(e.message||e)}); }
+  }
+  async signIn(){
+    this.setState({err:''});
+    try{ await this.A.signInWithPopup(this.auth, new this.A.GoogleAuthProvider()); }
+    catch(e){
+      const c = e.code||'';
+      const msg = c.includes('unauthorized-domain') ? `This web address isn't allowed yet. In Firebase → Security → Authentication → Settings → Authorised domains, add ${location.hostname}`
+        : c.includes('popup-blocked') ? 'Chrome blocked the sign-in window. Tap the button again and allow pop-ups.'
+        : c.includes('popup-closed') || c.includes('cancelled') ? 'Sign-in was closed before finishing. Try again.'
+        : c.includes('operation-not-allowed') ? 'Google sign-in is off. In Firebase → Security → Authentication → Sign-in method, enable Google.'
+        : c.includes('api-key') || c.includes('invalid') ? 'The Firebase settings look wrong. Tap "Firebase settings" below and paste them again.'
+        : (e.message||'Sign-in failed');
+      this.setState({err:msg});
+    }
+  }
+  async onUser(u){
+    const {doc,setDoc,onSnapshot,collection,query,where} = this.F;
+    this.unsub.forEach(f=>{ try{f();}catch(e){} }); this.unsub = [];
+    this.setState({user:u, phase:'app', err:''});
+    const meRef = doc(this.db,'users',u.uid);
+    try{ await setDoc(meRef,{name:u.displayName||'',email:u.email||''},{merge:true}); }
+    catch(e){ return this.setState({phase:'signin', err:'The database refused access. In Firebase → Databases and storage → Firestore → Rules, paste the Andando! rules from the guide and click Publish.'}); }
+    const inv = new URLSearchParams(location.search).get('invite');
+    let first = true;
+    this.unsub.push(onSnapshot(meRef, s => {
+      const me = s.data()||{}; this.setState({me}); this.watchPartner(me.partnerUid);
+      if(first){ first=false;
+        if(inv && inv!==u.uid && me.partnerUid!==inv){ setDoc(meRef,{partnerUid:inv},{merge:true}); try{ history.replaceState(null,'',location.pathname); }catch(e){} this.showToast('Linked ✓ Shared trips now sync'); }
+        else if(!me.partnerUid && !inv && !localStorage.getItem('andando-linklater')) this.setState({sheet:'link'});
+      }
+    }));
+    this.unsub.push(onSnapshot(query(collection(this.db,'users'),where('partnerUid','==',u.uid)), qs => {
+      qs.forEach(d => { if(!this.state.me.partnerUid) setDoc(meRef,{partnerUid:d.id},{merge:true}); });
+    }));
+    this.unsub.push(onSnapshot(query(collection(this.db,'items'),where('who','array-contains',u.uid)), qs => this.setState({items:qs.docs.map(d=>{ const x={id:d.id,...d.data()}; if(/\bAMZ\b/i.test(x.title||'') && x.status!=='booked'){ x.status='booked'; if(x.source==='calendar' && !this._amzFix?.[x.id]){ (this._amzFix=this._amzFix||{})[x.id]=1; this.F.updateDoc(doc(this.db,'items',x.id),{status:'booked'}).catch(()=>{}); } } return x; })})));
+    this.unsub.push(onSnapshot(query(collection(this.db,'checklist'),where('who','array-contains',u.uid)), qs => this.setState({cl:qs.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.at||0)-(b.at||0))})));
+  }
+  watchPartner(pid){
+    if(pid===this._pid) return; this._pid = pid; if(this._pu) this._pu();
+    if(!pid) return this.setState({partner:null});
+    this._pu = this.F.onSnapshot(this.F.doc(this.db,'users',pid), s => this.setState({partner:{uid:pid,...(s.data()||{})}}));
+    this.unsub.push(()=>this._pu && this._pu());
+  }
+  pName(){ const p=this.state.partner; return (p && p.name ? p.name.split(' ')[0] : '') || 'Partner'; }
+  showToast(t,undo){ this.undoFn = undo||null; this.setState({toast:t,toastUndo:!!undo}); clearTimeout(this.tt); this.tt = setTimeout(()=>this.setState({toast:null,toastUndo:false}), undo?6000:2800); }
+  fail(e){
+    const m = String(e && e.message || e);
+    this.setState({busy:''});
+    if(m==='NOKEY'){ this.setState({tab:'settings',sheet:null}); return this.showToast('Paste your Gemini key in Settings first'); }
+    if(m==='KEY') return this.showToast('Gemini refused the key. Check it in Settings → Test it.');
+    this.showToast('Something went wrong: '+m.slice(0,160));
+  }
+
+  async pickModel(force){
+    if(!force){ try{ const m = localStorage.getItem('andando-model3'); if(m) return m; }catch(e){} }
+    let best = '';
+    try{
+      const r = await fetch(GAPI+'models?pageSize=200',{headers:{'x-goog-api-key':this.state.key}});
+      if(r.ok){ const j = await r.json();
+        const ok = (j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace(/^models\//,''))
+          .filter(n=>/^gemini-[\d.]+-flash(-lite)?$/.test(n) || n==='gemini-flash-latest' || n==='gemini-flash-lite-latest');
+        const ver = n => parseFloat((n.match(/gemini-([\d.]+)/)||[])[1]||'0');
+        const lite = ok.filter(n=>n.includes('lite')), full = ok.filter(n=>!n.includes('lite'));
+        best = ok.includes('gemini-flash-lite-latest') ? 'gemini-flash-lite-latest' : (lite.sort((a,b)=>ver(b)-ver(a))[0] || (ok.includes('gemini-flash-latest') ? 'gemini-flash-latest' : full.sort((a,b)=>ver(b)-ver(a))[0]) || '');
+      }
+    }catch(e){}
+    best = best || MODEL_FALLBACKS[0];
+    try{ localStorage.setItem('andando-model3', best); }catch(e){}
+    return best;
+  }
+  async gemini(parts, retry=0){
+    if(!this.state.key) throw new Error('NOKEY');
+    const ctl = new AbortController(); const tmo = setTimeout(()=>ctl.abort(), 25000);
+    const model = retry===0 ? await this.pickModel(false) : retry===1 ? await this.pickModel(true) : MODEL_FALLBACKS[Math.min(retry-2, MODEL_FALLBACKS.length-1)];
+    let r;
+    try{ r = await fetch(GAPI+'models/'+model+':generateContent',{method:'POST',signal:ctl.signal,headers:{'Content-Type':'application/json','x-goog-api-key':this.state.key},
+      body:JSON.stringify({contents:[{role:'user',parts}],generationConfig:Object.assign({responseMimeType:'application/json',temperature:0.1,maxOutputTokens:2048}, this.noThink ? {} : {thinkingConfig:{thinkingBudget:0}})})}); }
+    catch(e){ clearTimeout(tmo); throw new Error(e.name==='AbortError' ? 'Gemini took too long. Check your connection and try again.' : 'No internet connection.'); }
+    clearTimeout(tmo);
+    if(r.status===404 && retry < MODEL_FALLBACKS.length+1){ try{ localStorage.removeItem('andando-model3'); }catch(e){} if(retry>=1) try{ localStorage.setItem('andando-model3', MODEL_FALLBACKS[Math.min(retry-1, MODEL_FALLBACKS.length-1)]); }catch(e){} return this.gemini(parts, retry+1); }
+    if(!r.ok){ let msg=''; try{ const ej = await r.json(); msg = (ej.error && ej.error.message) || ''; }catch(e){}
+      if(r.status===400 && !this.noThink && !/api key|API_KEY/i.test(msg)){ this.noThink = true; return this.gemini(parts, retry); }
+      if((r.status===400||r.status===401||r.status===403) && /api key|API_KEY|permission|unauthori|credential/i.test(msg)) throw new Error('KEY');
+      if(r.status===429) throw new Error('Gemini is busy (free limit for this minute). Try again in a minute.');
+      throw new Error('Gemini '+r.status+(msg?': '+msg:'')); }
+    const j = await r.json();
+    const txt = (j.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+    try{ return JSON.parse(txt); }catch(e){ const m = txt.match(/\{[\s\S]*\}/); return m ? JSON.parse(m[0]) : {items:[]}; }
+  }
+
+  async toWav(blob){
+    const AC = window.AudioContext || window.webkitAudioContext; const ac = new AC();
+    const src = await ac.decodeAudioData(await blob.arrayBuffer()); try{ ac.close(); }catch(e){}
+    const rate = 12000, len = Math.max(1, Math.ceil(src.duration*rate));
+    const off = new OfflineAudioContext(1, len, rate); const node = off.createBufferSource(); node.buffer = src; node.connect(off.destination); node.start();
+    const out = (await off.startRendering()).getChannelData(0);
+    const buf = new ArrayBuffer(44 + out.length*2), v = new DataView(buf); let o = 0;
+    const W = s => { for(let i=0;i<s.length;i++) v.setUint8(o++, s.charCodeAt(i)); }, U32 = x => { v.setUint32(o,x,true); o+=4; }, U16 = x => { v.setUint16(o,x,true); o+=2; };
+    W('RIFF'); U32(36+out.length*2); W('WAVE'); W('fmt '); U32(16); U16(1); U16(1); U32(rate); U32(rate*2); U16(2); U16(16); W('data'); U32(out.length*2);
+    for(let i=0;i<out.length;i++){ const x = Math.max(-1, Math.min(1, out[i])); v.setInt16(o, x<0 ? x*0x8000 : x*0x7FFF, true); o+=2; }
+    return buf;
+  }
+  async findCodes(canvases){
+    const out = [];
+    if(!('BarcodeDetector' in window)) return out;
+    let formats = ['qr_code','aztec','pdf417','data_matrix','code_128'];
+    try{ const sup = await BarcodeDetector.getSupportedFormats(); formats = formats.filter(f=>sup.includes(f)); }catch(e){}
+    if(!formats.length) return out;
+    const det = new BarcodeDetector({formats});
+    for(const c of canvases){
+      let found = []; try{ found = await det.detect(c); }catch(e){}
+      for(const f of found){
+        const b = f.boundingBox, p = Math.max(b.width,b.height)*0.12;
+        const x = Math.max(0,b.x-p), y = Math.max(0,b.y-p), w = Math.min(c.width-x,b.width+2*p), h = Math.min(c.height-y,b.height+2*p);
+        const s = Math.min(1, 640/Math.max(w,h)); const o = document.createElement('canvas'); o.width = Math.round(w*s); o.height = Math.round(h*s);
+        const g = o.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,o.width,o.height); g.imageSmoothingEnabled = false; g.drawImage(c,x,y,w,h,0,0,o.width,o.height);
+        if(!out.some(z=>z.text===f.rawValue)) out.push({img:o.toDataURL('image/png'), text:f.rawValue||'', format:f.format||''});
+        if(out.length>=4) return out;
+      }
+    }
+    return out;
+  }
+  shrink(c, max=900, q=0.72){ const s=Math.min(1,max/Math.max(c.width,c.height)); const o=document.createElement('canvas'); o.width=Math.round(c.width*s); o.height=Math.round(c.height*s); o.getContext('2d').drawImage(c,0,0,o.width,o.height); return o.toDataURL('image/jpeg',q); }
+  loadPdfjs(){ if(!this._pdfjs) this._pdfjs = import(PDFJS+'pdf.min.mjs').then(m=>{ m.GlobalWorkerOptions.workerSrc = PDFJS+'pdf.worker.min.mjs'; return m; }).catch(e=>{ this._pdfjs=null; throw e; }); return this._pdfjs; }
+  async pdfOpen(buf){ const pdfjs = await this.loadPdfjs(); return pdfjs.getDocument({data:new Uint8Array(buf.slice(0))}).promise; }
+  async pdfText(pdf){ let text=''; for(let i=1;i<=Math.min(pdf.numPages,3);i++){ try{ const tc = await (await pdf.getPage(i)).getTextContent(); text += tc.items.map(x=>x.str).join(' ') + '\n'; }catch(e){} } return text; }
+  async pdfRender(pdf, n=2, scale=1.6){ const pages=[]; for(let i=1;i<=Math.min(pdf.numPages,n);i++){ const pg = await pdf.getPage(i); const vp = pg.getViewport({scale}); const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height; await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; pages.push(c); } return pages; }
+  async pdfPages(buf){
+    const pdfjs = await this.loadPdfjs();
+    const pdf = await pdfjs.getDocument({data:new Uint8Array(buf.slice(0))}).promise;
+    const pages = []; let text = '';
+    for(let i=1;i<=Math.min(pdf.numPages,3);i++){
+      const pg = await pdf.getPage(i); const vp = pg.getViewport({scale:2});
+      try{ const tc = await pg.getTextContent(); text += tc.items.map(x=>x.str).join(' ') + '\n'; }catch(e){}
+      const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+      await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; pages.push(c);
+    }
+    return {pages, text};
+  }
+  async imgCanvas(file){ const bm = await createImageBitmap(file); const c=document.createElement('canvas'); c.width=bm.width; c.height=bm.height; c.getContext('2d').drawImage(bm,0,0); return c; }
+
+  async handleFile(file){
+    if(!file) return;
+    this.setState({sheet:null, busy:'Reading your ticket…'});
+    try{
+      const buf = await file.arrayBuffer();
+      const isPdf = file.type==='application/pdf' || /\.pdf$/i.test(file.name);
+      let canvases = [], parsePromise;
+      const ask = part => this.gemini([{text:PROMPT(iso(new Date()))}, part]);
+      if(isPdf){
+        let pdf = null; try{ pdf = await this.pdfOpen(buf); }catch(e){}
+        const text = pdf ? await this.pdfText(pdf) : '';
+        if(text.replace(/\s/g,'').length > 80) parsePromise = ask({text:'Ticket or booking document (text extracted from PDF):\n' + text.slice(0,8000)});
+        try{ if(pdf) canvases = await this.pdfRender(pdf, parsePromise ? 2 : 1); }catch(e){}
+        if(!parsePromise) parsePromise = canvases[0] ? ask({inline_data:{mime_type:'image/jpeg', data:this.shrink(canvases[0],1280,0.8).split(',')[1]}}) : ask({inline_data:{mime_type:'application/pdf', data:b64(buf)}});
+      } else {
+        try{ canvases = [await this.imgCanvas(file)]; }catch(e){}
+        parsePromise = canvases[0] ? ask({inline_data:{mime_type:'image/jpeg', data:this.shrink(canvases[0],1280,0.8).split(',')[1]}}) : ask({inline_data:{mime_type:file.type||'image/jpeg', data:b64(buf)}});
+      }
+      const codes = await this.findCodes(canvases);
+      const page = !codes.length && canvases[0] ? this.shrink(canvases[0]) : '';
+      const res = await parsePromise;
+      this.setState({busy:''});
+      this.review(res, isPdf?'pdf':'screenshot', {codes, page});
+    }catch(e){ this.fail(e); }
+  }
+  pcmWav(chunks, inRate){
+    const rate = 16000, total = chunks.reduce((a,c)=>a+c.length,0), ratio = inRate/rate, len = Math.floor(total/ratio);
+    const all = new Float32Array(total); let p=0; chunks.forEach(c=>{ all.set(c,p); p+=c.length; });
+    const buf = new ArrayBuffer(44+len*2), v = new DataView(buf); let o=0;
+    const W=s=>{for(let i=0;i<s.length;i++)v.setUint8(o++,s.charCodeAt(i));}, U32=x=>{v.setUint32(o,x,true);o+=4;}, U16=x=>{v.setUint16(o,x,true);o+=2;};
+    W('RIFF');U32(36+len*2);W('WAVE');W('fmt ');U32(16);U16(1);U16(1);U32(rate);U32(rate*2);U16(2);U16(16);W('data');U32(len*2);
+    let peak=0;
+    for(let i=0;i<len;i++){ const a=Math.floor(i*ratio), b=Math.min(total,Math.floor((i+1)*ratio)); let sum=0; for(let j=a;j<b;j++) sum+=all[j]; const x=Math.max(-1,Math.min(1,sum/Math.max(1,b-a))); peak=Math.max(peak,Math.abs(x)); v.setInt16(o,x<0?x*0x8000:x*0x7FFF,true); o+=2; }
+    return {buf, secs:len/rate, peak};
+  }
+  async startVoice(){
+    if(!this.state.key){ this.setState({sheet:null,tab:'settings'}); return this.showToast('Paste your Gemini key in Settings first'); }
+    try{
+      const st = await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(AC){
+        const ac = new AC(); if(ac.state==='suspended') await ac.resume();
+        const src = ac.createMediaStreamSource(st), proc = ac.createScriptProcessor(4096,1,1), chunks=[];
+        proc.onaudioprocess = e => chunks.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+        const mute = ac.createGain(); mute.gain.value = 0; src.connect(proc); proc.connect(mute); mute.connect(ac.destination);
+        const rate = ac.sampleRate;
+        const rec = { state:'recording', stream:st, onstop:null, stop:()=>{ if(rec.state==='inactive') return; rec.state='inactive'; try{proc.disconnect();src.disconnect();}catch(e){} st.getTracks().forEach(t=>t.stop()); try{ac.close();}catch(e){} rec.onstop && rec.onstop(); } };
+        rec.onstop = async () => {
+          try{ const w = this.pcmWav(chunks, rate);
+            if(w.secs < 0.6) throw new Error('That was too short. Hold on a second longer and try again.');
+            if(w.peak < 0.01) throw new Error('No sound reached the microphone. Check that Andando! is allowed to use it.');
+            const res = await this.gemini([{text:PROMPT(iso(new Date()))+' The audio may be Spanish or English; understand either.'},{inline_data:{mime_type:'audio/wav',data:b64(w.buf)}}]);
+            this.setState({sheet:null}); this.review(res,'voice'); }catch(e){ this.setState({sheet:null}); this.fail(e); }
+        };
+        this.rec = rec; this.setState({sheet:'voice', voice:'rec', sayText:''});
+        clearTimeout(this.recT); this.recT = setTimeout(()=>this.stopVoice(), 30000);
+        return;
+      }
+      const mime = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'].find(m=>window.MediaRecorder && MediaRecorder.isTypeSupported(m)) || '';
+      const rec = new MediaRecorder(st, mime?{mimeType:mime}:undefined); const chunks = [];
+      rec.ondataavailable = e => e.data && e.data.size && chunks.push(e.data);
+      rec.onstop = async () => {
+        st.getTracks().forEach(t=>t.stop());
+        const type = (rec.mimeType||mime||'audio/webm').split(';')[0];
+        try{ const blob = new Blob(chunks,{type}); let part;
+          try{ part = {inline_data:{mime_type:'audio/wav',data:b64(await this.toWav(blob))}}; }catch(cv){ part = {inline_data:{mime_type:type,data:b64(await blob.arrayBuffer())}}; }
+          const res = await this.gemini([{text:PROMPT(iso(new Date()))},part]);
+          this.setState({sheet:null}); this.review(res,'voice'); }catch(e){ this.setState({sheet:null}); this.fail(e); }
+      };
+      rec.start(); this.rec = rec; this.setState({sheet:'voice', voice:'rec', sayText:''});
+      clearTimeout(this.recT); this.recT = setTimeout(()=>this.stopVoice(), 30000);
+    }catch(e){ this.setState({sheet:'voice', voice:'type'}); this.showToast('Microphone not available. You can type it instead.'); }
+  }
+  stopVoice(){ clearTimeout(this.recT); if(this.rec && this.rec.state!=='inactive'){ this.rec.stop(); this.setState({voice:'think'}); } }
+  async sendText(){
+    const t = this.state.sayText.trim(); if(!t) return;
+    this.setState({voice:'think'});
+    try{ const res = await this.gemini([{text:PROMPT(iso(new Date()))},{text:'Input note: '+t}]); this.setState({sheet:null}); this.review(res,'note'); }
+    catch(e){ this.setState({sheet:null}); this.fail(e); }
+  }
+
+  norm(it){
+    const type = T[it.type] ? it.type : 'other';
+    const title = (it.title || [it.from,it.to].filter(Boolean).join(' → ') || T[type].l).slice(0,90);
+    return {type, title, from:it.from||'', to:it.to||'', date:/^\d{4}-\d\d-\d\d$/.test(it.date||'')?it.date:this.state.sel, time:/^\d\d:\d\d$/.test(it.time||'')?it.time:'',
+      endDate:/^\d{4}-\d\d-\d\d$/.test(it.endDate||'')?it.endDate:'', endTime:it.endTime||'', operator:it.operator||'', number:it.number||'', ref:it.ref||'', seat:it.seat||'', address:it.address||'',
+      passengers:Array.isArray(it.passengers)?it.passengers.slice(0,6):[], status: it.booked===false ? 'planned' : (it.booked ? 'booked' : 'planned'), both: it.both!==false};
+  }
+  findDup(n){
+    return this.state.items.find(i => (n.ref && i.ref && i.ref.replace(/\s/g,'').toLowerCase()===n.ref.replace(/\s/g,'').toLowerCase())
+      || (i.date===n.date && i.type===n.type && n.type!=='other' && ((n.to && i.to && i.to.toLowerCase()===n.to.toLowerCase()) || i.title.toLowerCase()===n.title.toLowerCase())));
+  }
+  review(res, source, extra={}){
+    const list = (res && Array.isArray(res.items) ? res.items : []).map(x=>this.norm(x));
+    if(!list.length) return this.showToast(res && res.heard ? `Heard "${res.heard.slice(0,60)}" but found no trip. Try again or use Quick plan.` : 'No trip found in that. Try again or use Quick plan.');
+    if(extra.codes && extra.codes.length || extra.page) list.forEach(n=>{ if(n.status==='planned' && source!=='voice' && source!=='note') n.status='booked'; });
+    const dup = this.findDup(list[0]);
+    if(dup) return this.setState({sheet:'dup', dup:{list,source,extra,match:dup}});
+    this.addItems(list, source, extra);
+  }
+  async addItems(list, source, extra={}){
+    const {collection,addDoc,doc,deleteDoc,updateDoc} = this.F; const u = this.state.user, pid = this.state.me.partnerUid;
+    const label = {pdf:'from a PDF',screenshot:'from a screenshot',voice:'by voice',note:'from a note',manual:'with Quick plan'}[source]||'';
+    const ids = [];
+    try{
+      for(let i=0;i<list.length;i++){
+        const n = list[i]; const who = n.both && pid ? [u.uid,pid] : [u.uid];
+        const codes = i===0 ? (extra.codes||[]) : []; const page = i===0 ? (extra.page||'') : '';
+        const {both, ...rest} = n;
+        const data = {...rest, who, owner:u.uid, source, codes, page, createdAt:Date.now(), hist:[{by:u.uid,t:`added it ${label}`,at:Date.now()}]};
+        if(n.id){ await updateDoc(doc(this.db,'items',n.id), {...rest, who, hist:this.F.arrayUnion({by:u.uid,t:'edited it',at:Date.now()})}); ids.push(null); }
+        else { const r = await addDoc(collection(this.db,'items'), data); ids.push(r.id); }
+      }
+      const d0 = list[0].date; this.setState({sel:d0, start: this.weekStartFor(d0), tab:'upcoming', sheet:null});
+      const made = ids.filter(Boolean);
+      const what = list.length>1 ? `${list.length} items` : list[0].title;
+      this.showToast(list[0].id ? 'Saved ✓' : `${what} added to ${this.dayName(d0)} ✓`, made.length ? ()=>{ made.forEach(id=>deleteDoc(doc(this.db,'items',id))); this.showToast('Undone. Nothing was added'); } : null);
+    }catch(e){ this.fail(e); }
+  }
+  weekStartFor(d){ const s = this.state.start; return (d>=s && d<=addDays(s,6)) ? s : d; }
+  dayName(d){ const t = iso(new Date()); return d===t ? 'today' : d===addDays(t,1) ? 'tomorrow' : `${DOW[dt(d).getDay()]} ${dt(d).getDate()} ${MON[dt(d).getMonth()]}`; }
+  async upd(id, patch, t){ try{ await this.F.updateDoc(this.F.doc(this.db,'items',id), {...patch, hist:this.F.arrayUnion({by:this.state.user.uid,t,at:Date.now()})}); }catch(e){ this.fail(e); } }
+
+  covers(i,d){ return i.type==='stay' && i.date<=d && (i.endDate ? d<i.endDate : d===i.date); }
+  dayInfo(d){
+    const s = this.state, free = !!(s.me.free && s.me.free[d]);
+    const on = s.items.filter(i=>i.type!=='stay' && (i.date===d || (i.endDate && i.endDate>i.date && i.date<d && d<=i.endDate)));
+    const stays = s.items.filter(i=>this.covers(i,d));
+    const outs = s.items.filter(i=>i.type==='stay' && i.endDate===d);
+    const ins = s.items.filter(i=>i.type==='stay' && i.date===d);
+    const isAmz = i => /\bAMZ\b/i.test(i.title||'');
+    const home = on.some(isAmz);
+    const hasMove = on.some(i=>!isAmz(i)) || outs.length>0;
+    const gap = !home && hasMove && !stays.length && d>=iso(new Date());
+    const planned = [...on.filter(i=>i.date===d), ...ins].filter(i=>i.status!=='booked').length;
+    return {free, on, stays, outs, gap, pending: free ? 0 : planned + (gap?1:0), any: on.length+stays.length+outs.length};
+  }
+  links(i){
+    if(/\bAMZ\b/i.test(i.title||'')) return [];
+    const L=[]; const place = i.to || i.title; const end = i.endDate || addDays(i.date,1); const n = (i.who||[]).length || 1;
+    if(i.type==='flight' && i.number) L.push({label:'Track on Flightradar24', url:`https://www.flightradar24.com/data/flights/${enc(i.number.toLowerCase().replace(/\s/g,''))}`});
+    if(i.type==='train') L.push({label:'Live trains on TrainTracker', url:'https://traintracker.live/'});
+    if(i.status!=='booked' && ['flight','train','bus','ferry'].includes(i.type)) L.push({label:`Find ${T[i.type].l.toLowerCase()} tickets`, url:`https://www.google.com/search?q=${enc(`${T[i.type].l} ${i.from} ${i.to||i.title} ${i.date}`)}`});
+    if(i.type==='ride'){ L.push({label:'Book with Uber', url:`https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[formatted_address]=${enc(place)}`}); L.push({label:'Directions (public transport)', url:`https://www.google.com/maps/dir/?api=1&destination=${enc(place)}&travelmode=transit`}); }
+    if(i.type==='stay' && i.status!=='booked'){ L.push({label:'Search Booking.com', url:`https://www.booking.com/searchresults.html?ss=${enc(place)}&checkin=${i.date}&checkout=${end}&group_adults=${Math.max(2,n)}`}); L.push({label:'Search Airbnb', url:`https://www.airbnb.com/s/${enc(place)}/homes?checkin=${i.date}&checkout=${end}&adults=${Math.max(2,n)}`}); }
+    if(i.address) L.push({label:'Open address in Maps', url:`https://www.google.com/maps/search/?api=1&query=${enc(i.address)}`});
+    return L;
+  }
+  blankQ(type){ return {type:type||'other', title:'', date:this.state.sel, time:'', endDate:'', ref:'', both:true, booked:false}; }
+
+  renderVals(){
+    const s = this.state, today = iso(new Date());
+    const spinner = React.createElement('span',{style:{width:26,height:26,borderRadius:'50%',border:'3px solid #FFF2B3',borderTopColor:'#8A5A3B',animation:'andSpin .8s linear infinite',flex:'none',display:'inline-block'}});
+    const pulse = React.createElement('span',{style:{position:'absolute',inset:0,borderRadius:34,background:'#8A5A3B',animation:'andPulse 1.5s ease-out infinite'}});
+    const uid = s.user && s.user.uid, pid = s.me.partnerUid, pname = this.pName();
+    const nav = (k,label,glyph) => ({label,glyph,bg:s.tab===k?'#FFF2B3':'transparent',fg:s.tab===k?'#5E3B24':'#5A524A',go:()=>this.setState({tab:k})});
+
+    const strip = Array.from({length:7},(_,i)=>{ const d = addDays(s.start,i), inf = this.dayInfo(d), sel = d===s.sel;
+      return {dow:DOW[dt(d).getDay()], num:dt(d).getDate(), bg:inf.pending?'#FCE3DC':'#FFFFFF', fg:inf.pending?'#B4472F':'#2A2622',
+        bd: sel ? `2px solid ${inf.pending?'#B4472F':'#5E3B24'}` : (d===today ? '2px dashed #DDD3C4' : '2px solid transparent'),
+        mark: inf.free ? '~' : inf.pending ? `•${inf.pending}` : inf.any ? '✓' : '·', pick:()=>this.setState({sel:d})}; });
+
+    const inf = this.dayInfo(s.sel), free = inf.free;
+    const card = (i, o={}) => { const t = T[i.type]||T.other, booked = i.status==='booked', calm = !booked && free;
+      return {time: o.time || i.time || '—', kind: o.kind || t.k, title: o.title || i.title,
+        sub: calm ? 'Unplanned, by choice' : i.calendarRemoved ? 'Removed from Google Calendar · tap to delete' : (o.sub || [i.operator, i.number, i.ref?('ref '+i.ref):'', (i.who||[]).length>1?`with ${pname}`:''].filter(Boolean).join(' · ') || (booked?'Booked':'Not booked yet')),
+        tileBg: calm?'#F4EEE5':t.bg, tileFg: calm?'#8A8076':t.fg, cardBg: booked?'#FFFFFF':calm?'#FBF8F3':'#FFF8F5',
+        border: booked?'1.5px solid #F1EBE1':calm?'1.5px dashed #DDD3C4':'1.5px solid #F5CFC2', subFg: booked||calm?'#7A7168':'#A0523A',
+        action: booked ? ((i.codes&&i.codes.length)||i.page ? 'QR' : '✓') : calm ? 'Later' : 'Sort',
+        actBg: booked ? ((i.codes&&i.codes.length)||i.page ? '#8A5A3B' : '#FFF2B3') : calm ? '#EFE8DD' : '#E8664A',
+        actFg: booked ? ((i.codes&&i.codes.length)||i.page ? '#FFFFFF' : '#5E3B24') : calm ? '#8A8076' : '#FFFFFF',
+        open: ()=>{ if(booked && ((i.codes&&i.codes.length)||i.page) && o.qrFirst) return this.setState({ticketId:i.id,codeIdx:0}); this.setState({sheet:'detail',detailId:i.id}); }}; };
+    const sk = x => x.time ? x.time : '99';
+    const dayItems = [
+      ...inf.outs.map(i=>card(i,{time:i.endTime||'OUT',kind:'CHECKOUT',title:`Leave ${i.title}`})),
+      ...inf.on.slice().sort((a,b)=>sk(a).localeCompare(sk(b))).map(i=>{
+        if(i.date===s.sel) return card(i, i.endDate && i.endDate>i.date && !i.time ? {time:'ALL DAY'} : {});
+        const n = Math.round((dt(i.endDate)-dt(i.date))/864e5)+1, k = Math.round((dt(s.sel)-dt(i.date))/864e5)+1;
+        return card(i,{time: k===n && i.endTime ? i.endTime : 'ALL DAY', sub:`Day ${k} of ${n} · until ${this.dayName(i.endDate)}`}); }),
+      ...inf.stays.map(i=>card(i,{time:'NIGHT'})),
+      ...(inf.gap ? [{time:'NIGHT',kind:'BED',title:'No bed for tonight?',sub:free?'Unplanned, by choice':'Nothing booked to sleep',tileBg:free?'#F4EEE5':'#FFFFFF',tileFg:free?'#8A8076':'#C2502F',cardBg:'transparent',border:free?'1.5px dashed #DDD3C4':'2px dashed #EDA48C',subFg:free?'#7A7168':'#A0523A',action:free?'Later':'Find',actBg:free?'#EFE8DD':'#FFFFFF',actFg:free?'#8A8076':'#C2502F',
+        open:()=>{ const last = inf.on[inf.on.length-1]; this.setState({sheet:'quick', q:{...this.blankQ('stay'), title:last?(last.to||''):'', date:s.sel, endDate:addDays(s.sel,1)}}); }}] : [])
+    ];
+    const elsewhere = Array.from({length:21},(_,k)=>addDays(today,k)).filter(d=>d!==s.sel).map(d=>({d,n:this.dayInfo(d).pending})).filter(x=>x.n>0).slice(0,5)
+      .map(x=>({label:`${this.dayName(x.d).replace(/^./,c=>c.toUpperCase())} · ${x.n}`, pick:()=>this.setState({sel:x.d, start:this.weekStartFor(x.d)})}));
+    const D = dt(s.sel);
+
+    const tickets = s.items.filter(i=>i.status==='booked' && ((i.codes&&i.codes.length)||i.page) && (i.endDate||i.date)>=today)
+      .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).map(i=>{ const t=T[i.type]||T.other; return {kind:t.k,tileBg:t.bg,tileFg:t.fg,
+        when:`${this.dayName(i.date).toUpperCase()}${i.time?' '+i.time:''}`, count: i.codes&&i.codes.length ? `${i.codes.length} code${i.codes.length>1?'s':''}` : 'ticket', title:i.title,
+        sub:[i.operator,i.number,i.ref].filter(Boolean).join(' · '), show:()=>this.setState({ticketId:i.id,codeIdx:0})}; });
+
+    const it = s.items.find(i=>i.id===s.detailId);
+    const d = it ? (()=>{ const t=T[it.type]||T.other, booked=it.status==='booked', hasP = pid && (it.who||[]).includes(pid);
+      const facts = [['DATE',this.dayName(it.date)],['TIME',it.time],['FROM',it.from],['TO',it.to],[it.type==='stay'?'CHECKOUT':'RETURN / END',it.endDate?this.dayName(it.endDate)+(it.endTime?' '+it.endTime:''):''],['COMPANY',it.operator],['NUMBER',it.number],['REF',it.ref],['SEAT',it.seat],['ADDRESS',it.address],['PASSENGERS',(it.passengers||[]).join(', ')]].filter(f=>f[1]).map(([k,v])=>({k,v}));
+      const links = this.links(it);
+      return {kind:t.k,tileBg:t.bg,tileFg:t.fg,title:it.title, when:`${this.dayName(it.date)}${it.time?' · '+it.time:''}`,
+        pill: booked?'Booked':'Not booked yet', pillBg: booked?'#FFF2B3':'#FCE3DC', pillFg: booked?'#5E3B24':'#B4472F',
+        hasCodes: !!((it.codes&&it.codes.length)||it.page), showCode:()=>this.setState({ticketId:it.id,codeIdx:0}),
+        facts, hasFacts: facts.length>0, links, hasLinks: links.length>0,
+        canPartner: !!pid, pLabel: hasP ? `✓ ${pname}` : `+ Add ${pname}`, pBg: hasP?'#FFF2B3':'#FFFFFF', pFg: hasP?'#5E3B24':'#7A7168', pBd: hasP?'1.5px solid transparent':'1.5px dashed #DDD3C4',
+        togglePartner:()=>{ const w = hasP ? (it.who||[]).filter(x=>x!==pid) : [...(it.who||[]),pid]; this.upd(it.id,{who:w}, hasP?`removed ${pname}`:`added ${pname}`); this.showToast(hasP?`${pname} removed`:`${pname} joins · now in both agendas`); },
+        bookLabel: booked?'Mark not booked':'Mark as booked', bookBg: booked?'#F1EBE1':'#8A5A3B', bookFg: booked?'#2A2622':'#FFFFFF',
+        toggleBooked:()=>this.upd(it.id,{status:booked?'planned':'booked'}, booked?'marked it not booked':'marked it as booked'),
+        addCode:()=>{ this._codeFor = it.id; this.codeRef.current && this.codeRef.current.click(); },
+        edit:()=>this.setState({sheet:'quick', q:{id:it.id,type:it.type,title:it.title,date:it.date,time:it.time||'',endDate:it.endDate||'',ref:it.ref||'',both:hasP||!pid,booked}}),
+        remove:()=>{ if(!window.confirm(`Delete "${it.title}" for ${(it.who||[]).length>1?'both of you':'you'}?`)) return; const snap={...it}; delete snap.id; this.F.deleteDoc(this.F.doc(this.db,'items',it.id)); this.setState({sheet:null}); this.showToast('Deleted', ()=>{ this.F.setDoc(this.F.doc(this.db,'items',it.id), snap); this.showToast('Restored ✓'); }); },
+        hasHist: !!(it.hist&&it.hist.length), hist:(it.hist||[]).slice().sort((a,b)=>b.at-a.at).slice(0,5).map(h=>({line:`${h.by===uid?'You':h.by==='calendar'?'Google Calendar':pname} ${h.t}`, when:this.dayName(iso(new Date(h.at)))}))}; })() : {facts:[],links:[],hist:[]};
+
+    const tki = s.items.find(i=>i.id===s.ticketId);
+    const tk = tki ? (()=>{ const t=T[tki.type]||T.other; const imgs = (tki.codes||[]).map(c=>c.img); if(!imgs.length && tki.page) imgs.push(tki.page); const idx=Math.min(s.codeIdx,imgs.length-1);
+      return {kind:t.k,tileBg:t.bg,tileFg:t.fg,title:tki.title,sub:`${this.dayName(tki.date)}${tki.time?' · '+tki.time:''}${tki.ref?' · ref '+tki.ref:''}`, img:imgs[idx]||'', multi:imgs.length>1,
+        tabs: imgs.map((_,k)=>({label: (tki.passengers&&tki.passengers[k]) ? tki.passengers[k].split(' ')[0] : `Code ${k+1}`, bg:k===idx?'#FFFFFF':'transparent', pick:()=>this.setState({codeIdx:k})}))}; })() : {tabs:[]};
+
+    const q = s.q || this.blankQ();
+    const setQ = k => e => { const v = e.target.value; this.setState(st=>({q:{...(st.q||this.blankQ()),[k]:v}})); };
+    const checks = [{label:pid?`${pname} comes too`:'Shared with partner (link first)',k:'both'},{label:'Already booked',k:'booked'}].map(c=>({label:c.label,tick:q[c.k]?'✓':'',bg:q[c.k]?'#8A5A3B':'#FFFFFF',bd:q[c.k]?'none':'2px solid #DDD3C4',toggle:()=>this.setState(st=>({q:{...st.q,[c.k]:!st.q[c.k]}}))}));
+
+    const entryList = (s.entry && s.entry.countries || []).map(c=>({country:c.country, needs:(c.needs||[]).map(n=>({title:n.title, detail:[n.detail, n.deadline?('Deadline: '+n.deadline):''].filter(Boolean).join(' · '), badge:n.mandatory?'Required':'Suggested', bg:n.mandatory?'#FCE3DC':'#FFF2B3', fg:n.mandatory?'#B4472F':'#5E3B24'}))}));
+
+    return {
+      spinner, pulse,
+      isBoot:s.phase==='boot', isConfig:s.phase==='config', isSignin:s.phase==='signin', isApp:s.phase==='app',
+      hasErr:!!s.err, err:s.err, cfgDraft:s.cfgDraft, setCfgDraft:e=>this.setState({cfgDraft:e.target.value}),
+      saveCfg:()=>{ const t=s.cfgDraft, o={}; ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId'].forEach(k=>{ const m=t.match(new RegExp(k+'\\s*:\\s*["\']([^"\']+)["\']')); if(m) o[k]=m[1]; });
+        if(!o.apiKey||!o.projectId||!o.appId) return this.setState({err:'That doesn\'t look like the Firebase block. Copy everything between { and }.'}); localStorage.setItem('andando-fbcfg',JSON.stringify(o)); location.reload(); },
+      openConfig:()=>this.setState({phase:'config',err:''}), signIn:()=>this.signIn(),
+      hello: s.user ? `Hi ${(s.user.displayName||'').split(' ')[0]||'there'}` : 'Andando!',
+      syncLine: pid ? `Synced with ${pname} ✓` : 'Not linked yet · tap to invite',
+      openLinkOrSettings:()=>pid ? this.setState({tab:'settings'}) : this.setState({sheet:'link'}),
+      goSettings:()=>this.setState({tab:'settings'}),
+      isUpcoming:s.tab==='upcoming', isTickets:s.tab==='tickets', isTrip:s.tab==='trip', isMap:s.tab==='map', isSettings:s.tab==='settings',
+      navL:[nav('upcoming','Upcoming','▤'),nav('tickets','Tickets','QR')], navR:[nav('trip','Trip','✓'),nav('map','Map','◎')],
+      strip, prevWeek:()=>this.setState({start:addDays(s.start,-7)}), nextWeek:()=>this.setState({start:addDays(s.start,7)}),
+      day:{title: s.sel===today?'Today':s.sel===addDays(today,1)?'Tomorrow':DOWL[D.getDay()], sub:`${DOW[D.getDay()]} ${D.getDate()} ${MON[D.getMonth()]}`,
+        isFree:free, canFree: free || inf.pending>0, freeLabel: free?'Unplanned ✕':'Leave unplanned', freeBg: free?'#F1EBE1':'#FFFFFF', freeFg: free?'#5A524A':'#7A7168', freeBd: free?'#F1EBE1':'#E7DFD2'},
+      toggleFree:()=>{ const v=!free; this.F.setDoc(this.F.doc(this.db,'users',uid),{free:{[s.sel]:v}},{merge:true}); this.showToast(v?'Left open. Nothing to sort for this day.':'Planning this day again'); },
+      dayItems, dayEmpty: dayItems.length===0, elsewhere, hasElsewhere: elsewhere.length>0,
+      tickets, noTickets: tickets.length===0,
+      entry: entryList, entryWhen: s.entry ? `checked ${this.dayName(iso(new Date(s.entry.at)))}` : '',
+      entryBtn: s.entry ? 'Check again' : 'Check my upcoming countries',
+      checkEntry: async ()=>{ const up = s.items.filter(i=>i.date>=today && i.date<=addDays(today,60)).map(i=>`${i.date}: ${i.type} ${i.from||''} → ${i.to||i.title}`).join('\n');
+        if(!up) return this.showToast('Add some trips first, then check.');
+        this.setState({busy:'Checking entry rules…'});
+        try{ const r = await this.gemini([{text:`Travellers: two Spanish citizens with Spanish (EU) passports. Today is ${today}. Their upcoming plans:\n${up}\nFor each foreign country outside Spain in these plans, list what they must or should arrange: visas or e-visas, online arrival forms (e.g. Philippines eTravel), mandatory vaccinations, passport validity, proof of onward travel, and travel insurance (suggest it for any country outside Europe). Give deadlines as YYYY-MM-DD when there is a window (e.g. 72h before arrival). For EU/Schengen countries say nothing is needed. Return ONLY JSON {"countries":[{"country":"","needs":[{"title":"","detail":"one short sentence","deadline":"","mandatory":true}]}]}`}]);
+          const e = {at:Date.now(), countries:r.countries||[]}; localStorage.setItem('andando-entry',JSON.stringify(e)); this.setState({entry:e,busy:''}); }catch(e){ this.fail(e); } },
+      checklist: s.cl.map(k=>({t:k.t, tick:k.done?'✓':'', boxBg:k.done?'#8A5A3B':'#FFFFFF', boxBd:k.done?'none':'2px solid #DDD3C4', fg:k.done?'#A39888':'#2A2622', deco:k.done?'line-through':'none',
+        toggle:()=>this.F.updateDoc(this.F.doc(this.db,'checklist',k.id),{done:!k.done}), remove:()=>this.F.deleteDoc(this.F.doc(this.db,'checklist',k.id))})),
+      clText:s.clText, setClText:e=>this.setState({clText:e.target.value}),
+      addCl:()=>{ const t=s.clText.trim(); if(!t) return; this.F.addDoc(this.F.collection(this.db,'checklist'),{t,done:false,who:pid?[uid,pid]:[uid],at:Date.now()}); this.setState({clText:''}); },
+      email: s.user ? s.user.email : '', partnerLine: pid ? `Linked with ${s.partner&&s.partner.name||pname} ✓` : 'Not linked yet', notLinked: !pid,
+      sendInvite: async ()=>{ const url = `${location.origin}${location.pathname}?invite=${uid}`; const text = 'Join me on Andando! so our trips sync:';
+        try{ if(navigator.share) { await navigator.share({title:'Andando!',text,url}); } else { await navigator.clipboard.writeText(url); this.showToast('Invite link copied. Paste it to Maria on WhatsApp.'); } }catch(e){}
+        localStorage.setItem('andando-linklater','1'); this.setState({sheet:null}); },
+      keyLine: s.key ? 'Key saved on this phone ✓ Each phone needs it once.' : 'Needed to read PDFs, screenshots and voice. Paste the key from your note.',
+      keyDraft:s.keyDraft, setKeyDraft:e=>this.setState({keyDraft:e.target.value}),
+      saveKey:()=>{ const k=s.keyDraft.trim(); if(!k) return; localStorage.setItem('andando-gemini',k); this.setState({key:k,keyDraft:''}); this.showToast('Key saved ✓'); },
+      testKey: async ()=>{ this.setState({busy:'Testing your key…'}); try{ await this.gemini([{text:'Return {"items":[]}'}]); this.setState({busy:''}); this.showToast('Key works ✓'); }catch(e){ this.fail(e); } },
+      exportBackup:()=>{ try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify({app:'Andando!',exported:new Date().toISOString(),items:s.items,checklist:s.cl},null,2)],{type:'application/json'})); a.download=`andando-backup-${today}.json`; document.body.appendChild(a); a.click(); a.remove(); this.showToast('Backup saved to your downloads ✓'); }catch(e){ this.fail(e); } },
+      openPrototype:()=>{ location.href='Andando%20Prototype.dc.html'; },
+      doSignOut:()=>{ if(window.confirm('Sign out of Andando! on this phone?')) this.A.signOut(this.auth); },
+      fileRef:this.fileRef, codeRef:this.codeRef,
+      onFile:e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; this.handleFile(f); },
+      onCodeFile: async e=>{ const f=e.target.files&&e.target.files[0]; e.target.value=''; if(!f||!this._codeFor) return; this.setState({busy:'Looking for the code…'});
+        try{ const c=await this.imgCanvas(f); const codes=await this.findCodes([c]); const id=this._codeFor; const cur=(s.items.find(i=>i.id===id)||{}).codes||[];
+          if(codes.length) await this.upd(id,{codes:[...cur,...codes].slice(0,4),status:'booked'},'added a QR code'); else await this.upd(id,{page:this.shrink(c),status:'booked'},'added a ticket screenshot');
+          this.setState({busy:''}); this.showToast(codes.length?'QR saved ✓':'No code found, so the whole screenshot was saved'); }catch(err){ this.fail(err); } },
+      hasSheet:!!s.sheet, sAdd:s.sheet==='add', sVoice:s.sheet==='voice', sQuick:s.sheet==='quick', sDup:s.sheet==='dup', sLink:s.sheet==='link', sDetail:s.sheet==='detail' && !!it,
+      closeSheet:()=>{ if(s.sheet==='link') localStorage.setItem('andando-linklater','1'); if(this.rec&&this.rec.state!=='inactive'){ this.rec.onstop=null; try{this.rec.stop(); this.rec.stream.getTracks().forEach(t=>t.stop());}catch(e){} } this.setState({sheet:null}); },
+      openAdd:()=>{ this.setState({sheet:'add'}); if(!this._pre){ this._pre=1; this.loadPdfjs().catch(()=>{}); if(s.key) this.pickModel(false).catch(()=>{}); } }, addLabel:this.dayName(s.sel),
+      startVoice:()=>this.startVoice(), stopVoice:()=>this.stopVoice(), vRec:s.voice==='rec', vThink:s.voice==='think',
+      sayText:s.sayText, setSayText:e=>this.setState({sayText:e.target.value}), sendText:()=>this.sendText(),
+      pickFile:()=>{ if(!s.key){ this.setState({sheet:null,tab:'settings'}); return this.showToast('Paste your Gemini key in Settings first'); } this.fileRef.current && this.fileRef.current.click(); },
+      openQuick:()=>this.setState({sheet:'quick', q:this.blankQ()}),
+      q, qSet:{title:setQ('title'),date:setQ('date'),time:setQ('time'),endDate:setQ('endDate'),ref:setQ('ref')},
+      qTitle: q.id ? 'Edit' : 'Quick plan', qPh: q.type==='stay'?'Which city or place?':q.type==='event'?'Concert, cinema, match…':'Where to? e.g. Lisboa → Porto',
+      qTimeLabel: q.type==='stay'?'CHECK-IN TIME':'TIME', qIsStay: q.type==='stay', qChecks:checks,
+      qTypes: Object.entries(T).map(([k,t])=>({label:t.l, bg:q.type===k?'#8A5A3B':'#FFFFFF', fg:q.type===k?'#FFFFFF':'#5A524A', pick:()=>this.setState(st=>({q:{...(st.q||this.blankQ()),type:k}}))})),
+      qSaveBg: q.title.trim() ? '#8A5A3B' : '#D9C3B3', qSaveLabel: q.id ? 'Save changes' : (q.booked ? 'Add as booked' : 'Add as not booked'),
+      saveQuick:()=>{ if(!q.title.trim()) return; const parts=q.title.split(/→|->| a | to /i).map(x=>x.trim());
+        const n = {...this.norm({type:q.type,title:q.title.trim(),from:parts.length>1?parts[0]:'',to:parts.length>1?parts[parts.length-1]:(q.type==='stay'?q.title.trim():''),date:q.date,time:q.time,endDate:q.endDate,ref:q.ref,booked:q.booked}), both:q.both, id:q.id};
+        n.status = q.booked?'booked':'planned';
+        if(!q.id){ const dup=this.findDup(n); if(dup) return this.setState({sheet:'dup',dup:{list:[n],source:'manual',extra:{},match:dup}}); }
+        this.addItems([n],'manual'); },
+      dupText: s.dup ? `"${s.dup.match.title}" on ${this.dayName(s.dup.match.date)}${s.dup.match.ref?' (ref '+s.dup.match.ref+')':''}${s.dup.match.status==='booked'?' is already booked.':' is already planned.'}` : '',
+      dupShow:()=>this.setState({sheet:'detail',detailId:s.dup.match.id,dup:null}),
+      dupAdd:()=>{ const x=s.dup; this.setState({dup:null}); this.addItems(x.list,x.source,x.extra); },
+      d,
+      hasTicket:!!tki && !!tk.img, tk, closeTicket:()=>this.setState({ticketId:null}),
+      calLine: s.items.some(i=>i.source==='calendar') ? 'Syncing ✓ every 10 min' : 'Set up the helper script',
+      hasBusy:!!s.busy, busy:s.busy,
+      hasToast:!!s.toast, toast:s.toast, toastUndo:s.toastUndo, doUndo:()=>{ const f=this.undoFn; this.undoFn=null; this.setState({toastUndo:false}); if(f) f(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

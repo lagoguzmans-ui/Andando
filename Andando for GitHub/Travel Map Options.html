@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="design_doc_mode" content="canvas">
+<title>Leg · Travel map options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@48,500,1,0&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/d3@7.9.0/dist/d3.min.js" integrity="sha384-CjloA8y00+1SDAUkjs099PVfnY2KmDC2BZnws9kh8D/lX1s46w6EPhpXdqMfjK6i" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/topojson-client@3.1.0/dist/topojson-client.min.js" integrity="sha384-Ukv1p/xTma6P4/2bY5KzWBw+ydSpXmhCMtyciIQVDJ1RmOxtCYNMF1uXT9T63H67" crossorigin="anonymous"></script>
+<style>
+body{margin:0;background:#F1EADF;font-family:'Nunito',system-ui,sans-serif;color:#2A2622;-webkit-font-smoothing:antialiased}
+a{color:#8A5A3B}a:hover{color:#5E3B24}
+*::-webkit-scrollbar{width:0;height:0}*{scrollbar-width:none;box-sizing:border-box}
+.canvas{padding:48px 40px 60px;display:flex;flex-direction:column;gap:28px}
+.lead{max-width:760px}.lead .k{font:500 11px 'DM Mono',monospace;letter-spacing:.1em;color:#7A7168}
+.lead h1{font-size:32px;line-height:1.1;margin:8px 0 8px;letter-spacing:-.02em}.lead p{margin:0;font-size:15px;line-height:1.5;color:#5A524A;text-wrap:pretty}
+.row{display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start}
+.opt{display:flex;flex-direction:column;gap:12px;width:360px}
+.badge{align-self:flex-start;font:500 12px 'DM Mono',monospace;background:#2A2622;color:#fff;padding:4px 9px;border-radius:8px}
+.opt h2{margin:0;font-size:20px;letter-spacing:-.01em}.opt .note{font-size:13.5px;line-height:1.45;color:#5A524A;margin:0;text-wrap:pretty}
+.phone{width:360px;height:760px;background:#2A2622;border-radius:46px;padding:9px;box-shadow:0 30px 60px -22px rgba(80,55,20,.4)}
+.screen{position:relative;width:100%;height:100%;background:#FFFCEE;border-radius:38px;overflow:hidden;display:flex;flex-direction:column}
+.sb{height:34px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 28px;font-weight:700;font-size:12.5px}
+.sb span:last-child{font:500 10.5px 'DM Mono',monospace}
+.body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
+.body>*{flex-shrink:0}
+.nav{flex:none;height:68px;display:grid;grid-template-columns:1fr 1fr 64px 1fr 1fr;align-items:center;background:#fff;border-top:1.5px solid #F1EBE1}
+.nav div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;font-weight:800}
+.nav i{font-style:normal;width:46px;height:26px;border-radius:13px;display:flex;align-items:center;justify-content:center;font:500 11px 'DM Mono',monospace;color:#5A524A}
+.nav .on i{background:#FFF2B3;color:#5E3B24}
+.nav .plus{justify-self:center;width:52px;height:52px;border-radius:19px;background:#8A5A3B;color:#fff;font-size:26px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.gest{flex:none;height:18px;background:#fff;display:flex;align-items:center;justify-content:center}.gest span{width:100px;height:4px;border-radius:2px;background:#2A2622;opacity:.8}
+.hd{padding:8px 20px 4px}.hd .k{font-size:12.5px;font-weight:700;color:#8A8076}.hd .t{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.toast{position:absolute;left:16px;right:16px;bottom:96px;background:#2A2622;color:#fff;border-radius:14px;padding:11px 14px;font-size:13px;font-weight:700;opacity:0;transform:translateY(6px);transition:.2s;pointer-events:none;z-index:5}
+.toast.show{opacity:1;transform:none}
+path.c{cursor:pointer;stroke:#FFFCEE;stroke-width:.5;transition:fill .2s}
+path.c:hover{filter:brightness(.95)}
+/* A */
+.big{display:flex;align-items:baseline;gap:8px;padding:2px 20px 6px}.big .n{font-size:56px;font-weight:800;letter-spacing:-.04em;line-height:1;color:#5E3B24}
+.big .of{font-size:14px;font-weight:700;color:#8A8076;white-space:nowrap}.big .of b{color:#5E3B24}
+.hint{font-size:12px;font-weight:700;color:#8A8076;padding:0 20px 10px}
+.conts{display:flex;flex-direction:column;gap:9px;margin:0 16px 18px;background:#fff;border:1.5px solid #F1EBE1;border-radius:22px;padding:14px 16px}
+.cr{display:grid;grid-template-columns:96px 1fr 44px;gap:10px;align-items:center;font-size:13px;font-weight:800}
+.cr .bar{height:10px;border-radius:5px;background:#F4EEE5;overflow:hidden}.cr .bar span{display:block;height:100%;background:#8A5A3B;border-radius:5px;transition:width .3s}
+.cr .v{font:500 12px 'DM Mono',monospace;text-align:right;color:#5A524A}
+/* B */
+.globeWrap{display:flex;justify-content:center;padding:6px 0 4px;touch-action:none}
+.gstat{text-align:center;font-size:14px;font-weight:700;color:#8A8076;padding:0 20px}.gstat b{font-size:22px;color:#5E3B24;font-weight:800}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:14px 16px 18px}
+.chip{flex:none;cursor:pointer;display:flex;flex-direction:column;gap:1px;padding:9px 13px;border-radius:16px;background:#fff;border:1.5px solid #F1EBE1;font-size:14px;font-weight:800;white-space:nowrap}
+.chip small{font:500 11px 'DM Mono',monospace;color:#8A8076}
+.chip.next{border:2px dashed #E8664A;background:#FFF8F5}.chip.next small{color:#C2502F}
+.chip.sel{background:#FFF2B3;border-color:#8A5A3B}
+/* C */
+.arc{fill:none;stroke:#8A5A3B;stroke-width:1.4;stroke-dasharray:4 4;animation:dash 1.2s linear infinite}
+.arc.nx{stroke:#E8664A;stroke-width:1.8}
+@keyframes dash{to{stroke-dashoffset:-16}}
+.yr{display:flex;align-items:center;gap:8px;padding:12px 20px 6px;font-size:12px;font-weight:800;color:#8A8076;letter-spacing:.05em}
+.yr::after{content:"";flex:1;height:1.5px;background:#EDE5D9}
+.stamps{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:2px 16px 8px;align-items:center}
+.stamp{cursor:pointer;border:2px solid;border-radius:14px;padding:8px 6px;text-align:center;display:flex;flex-direction:column;gap:1px;background:rgba(255,255,255,.6);transition:transform .15s}
+.stamp:hover{transform:rotate(0) scale(1.04)!important}
+.stamp{position:relative;overflow:hidden;justify-content:center;min-height:70px}
+.stamp>span{position:relative}
+.stamp .ic{position:absolute!important;right:-12px;bottom:-16px;font-family:'Material Symbols Rounded';font-size:66px;line-height:1;opacity:.17;transform:rotate(-14deg);pointer-events:none;font-variation-settings:'FILL' 1,'wght' 500;letter-spacing:0;white-space:nowrap}
+.stamp.s1{border-radius:50%;aspect-ratio:1}
+.stamp.s1 .ic{right:50%;bottom:-22px;transform:translateX(50%) rotate(0);font-size:58px}
+.stamp.s2{border-style:double;border-width:5px;border-radius:6px}
+.stamp.s2 .ic{right:auto;left:-12px;transform:rotate(12deg)}
+.stamp.next .ic{opacity:.22}
+.stamp .e{font:500 8.5px 'DM Mono',monospace;letter-spacing:.12em;opacity:.8}.stamp .nm{font-size:13px;font-weight:800;line-height:1.15}.stamp .y{font:500 11px 'DM Mono',monospace}
+.stamp.next{border-style:dashed}
+.pulse{fill:none;stroke:#E8664A;stroke-width:2;animation:pl 1.4s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pl{0%{r:3;opacity:1}100%{r:16;opacity:0}}
+/* D */
+.tot{all:unset;cursor:pointer;margin:2px 16px 0;background:#fff;border:1.5px solid #F1EBE1;border-radius:20px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.tot:hover{background:#FCFAF6}.tot b{font-size:26px;font-weight:800;color:#5E3B24;letter-spacing:-.02em;margin-right:4px}.tot span{font-size:14px;font-weight:800}.tot .sub{font-size:12px;font-weight:800;color:#8A5A3B;white-space:nowrap}
+.sheet{position:absolute;inset:0;z-index:6;display:none;flex-direction:column;justify-content:flex-end}.sheet.open{display:flex}
+.sh-bg{position:absolute;inset:0;background:rgba(42,38,34,.4)}
+.sh{position:relative;background:#FFFCEE;border-radius:28px 28px 0 0;max-height:84%;display:flex;flex-direction:column}
+.grab{align-self:center;width:38px;height:5px;border-radius:3px;background:#DDD3C4;margin:9px 0 4px;flex:none}
+.sh-h{flex:none;display:flex;justify-content:space-between;align-items:center;padding:6px 18px 10px}.sh-h>div{flex:1;min-width:0}.sh-h .t2{font-size:22px;line-height:1.15;font-weight:800;letter-spacing:-.01em;white-space:nowrap}.sh-h .k{font-size:12.5px;font-weight:700;color:#8A8076;margin-top:2px}
+.sh-h .x{all:unset;cursor:pointer;width:40px;height:40px;border-radius:14px;background:#F1EBE1;display:flex;align-items:center;justify-content:center;font-weight:800}
+.seg{flex:none;display:flex;margin:0 16px 8px;background:#F1EBE1;border-radius:14px;padding:3px}
+.seg button{all:unset;cursor:pointer;flex:1;text-align:center;font-size:13.5px;font-weight:800;padding:9px;border-radius:11px}.seg button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.sh-list{flex:1;min-height:0;overflow-y:auto;padding-bottom:20px}
+.gh{position:sticky;top:0;background:#FFFCEE;display:flex;justify-content:space-between;padding:12px 18px 6px;font-size:12px;font-weight:800;color:#8A8076;letter-spacing:.05em}
+.rw{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 18px;min-height:46px;border-bottom:1px solid #F4EEE5;font-size:14.5px;font-weight:700;cursor:pointer}
+.rw:hover{background:#FBF6EA}.rw .yy{font:500 12px 'DM Mono',monospace;color:#5E3B24;background:#FFF2B3;padding:3px 8px;border-radius:8px}
+.rw .ad{font-size:12px;font-weight:800;color:#8A8076;border:1.5px dashed #DDD3C4;padding:3px 9px;border-radius:8px}
+.rw.nx .ad{border-color:#E8664A;color:#C2502F}
+.hd.row{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}.hd.row>div:first-child{flex:1;min-width:0}.hd.row .t,.hd.row .k{white-space:nowrap}
+.who{display:flex;background:#F1EBE1;border-radius:12px;padding:3px;flex:none}.who button{all:unset;cursor:pointer;font-size:12.5px;font-weight:800;padding:6px 11px;border-radius:9px}.who button.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.globeWrap{position:relative}
+.info{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);width:276px;background:#fff;border-radius:20px;box-shadow:0 14px 32px -12px rgba(60,40,20,.5);padding:12px 14px 13px;display:none;flex-direction:column;gap:8px;z-index:3}
+.info.open{display:flex}
+.info .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.info .nm2{font-size:18px;font-weight:800;line-height:1.15}.info .s2{font-size:12px;font-weight:700;color:#8A8076;margin-top:1px}
+.info .x2{all:unset;cursor:pointer;flex:none;width:30px;height:30px;border-radius:10px;background:#F1EBE1;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+.info .yrs{display:flex;flex-wrap:wrap;gap:6px}.info .yrs span{font:500 13px 'DM Mono',monospace;background:#FFF2B3;color:#5E3B24;padding:4px 9px;border-radius:8px}
+.info .addl{font-size:11px;font-weight:800;color:#8A8076;letter-spacing:.05em}
+.info .acts{display:flex;flex-wrap:wrap;gap:6px}.info .acts button{all:unset;cursor:pointer;font:500 12px 'DM Mono',monospace;padding:6px 9px;border-radius:9px;border:1.5px dashed #C9B8A6;color:#5E3B24}
+.info .acts button:hover{background:#FFF2B3}.info .acts button.rm{font-family:'Nunito',sans-serif;font-weight:800;border:none;background:#F1EBE1;color:#6E655B;margin-left:auto}
+.race{display:flex;gap:6px;padding:8px 20px 0}.race span{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;padding:5px 10px;border-radius:10px;background:#F1EBE1;color:#6E655B}
+.race span b{font:500 13px 'DM Mono',monospace}.race span.lead{background:#8A5A3B;color:#fff}
+.chal{position:absolute;inset:0;z-index:7;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(42,38,34,.5)}.chal.open{display:flex}
+.cc{width:100%;background:#fff;border-radius:28px;padding:22px 20px 18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 24px 50px -20px rgba(0,0,0,.5)}
+.cc .kk2{font-size:11.5px;font-weight:800;letter-spacing:.07em;color:#C2502F}.cc h3{margin:0;font-size:26px;line-height:1.1;letter-spacing:-.02em}
+.cc p{margin:0;font-size:14.5px;line-height:1.5;color:#3E3832;text-wrap:pretty}
+.vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;background:#FFF2B3;border-radius:18px;padding:12px 14px;color:#5E3B24}
+.vs div{display:flex;flex-direction:column;align-items:center}.vs b{font-size:30px;font-weight:800;line-height:1}.vs small{font-size:12px;font-weight:800}.vs i{font-style:normal;font:500 12px 'DM Mono',monospace;opacity:.7}
+.cc .go{all:unset;cursor:pointer;text-align:center;font-size:15.5px;font-weight:800;padding:15px;border-radius:18px;background:#8A5A3B;color:#fff}.cc .go:hover{background:#74492E}
+.cc .later{all:unset;cursor:pointer;text-align:center;font-size:13.5px;font-weight:800;color:#8A8076;padding:4px}
+.rw .yy.q{background:#F1EBE1;color:#6E655B}.rw .yy,.rw .ad{white-space:nowrap;flex:none}.race span,.vs small{white-space:nowrap}
+body.embed{background:#FFFCEE}body.embed .canvas{display:none}
+#embedRoot{display:none}body.embed #embedRoot{display:flex;flex-direction:column;height:100vh;overflow-y:auto;position:relative}
+</style>
+</head>
+<body>
+<div class="canvas">
+<div class="lead">
+<div class="k">LEG · MAP TAB · ROUND 2</div>
+<h1>Globe + journal</h1>
+<p>The globe from <a href="#1b">1b</a> with the year-by-year stamps from <a href="#1c">1c</a>. Tap the total to see every country, grouped by continent. Tap a stamp to turn the globe to that country. This is now the app's Map tab.</p>
+</div>
+<section class="row" id="turn2">
+<div class="opt" id="2a"><span class="badge">2a</span><h2>Globe + journal</h2><p class="note">Starts empty on first launch with a challenge to fill it in (<a href="?sample=1#2a">see it with sample data</a>). Each person has their own globe; switch with Me / Maria. Tap a country to see its name and the years you were there, or add a year.</p>
+<div class="phone"><div class="screen"><div class="sb"><span>10:20</span><span>5G · 82%</span></div><div class="body" data-v="d"></div><div class="nav"></div><div class="gest"><span></span></div><div class="toast"></div></div></div></div>
+</section>
+<div class="lead" style="margin-top:20px">
+<div class="k">LEG · MAP TAB · ROUND 1</div>
+<h1>Where you've been: three directions</h1>
+<p>Real country shapes from Natural Earth. All three are interactive: tap a country to add it to your map. The Philippines is shown as your next stop. Pick one, or mix them (for example the globe from <a href="#1b">1b</a> with the stamps from <a href="#1c">1c</a>).</p>
+</div>
+<section class="row" id="turn1">
+<div class="opt" id="1a"><span class="badge">1a</span><h2>Scratch map</h2><p class="note">Flat world, countries fill in brown as you go. A big counter and a progress bar for each continent.</p>
+<div class="phone"><div class="screen"><div class="sb"><span>10:20</span><span>5G · 82%</span></div><div class="body" data-v="a"></div><div class="nav"></div><div class="gest"><span></span></div><div class="toast"></div></div></div></div>
+<div class="opt" id="1b"><span class="badge">1b</span><h2>Spinning globe</h2><p class="note">A 3D globe you drag to spin. Tap a country chip and the globe turns to it. The most playful option.</p>
+<div class="phone"><div class="screen"><div class="sb"><span>10:20</span><span>5G · 82%</span></div><div class="body" data-v="b"></div><div class="nav"></div><div class="gest"><span></span></div><div class="toast"></div></div></div></div>
+<div class="opt" id="1c"><span class="badge">1c</span><h2>Passport journal</h2><p class="note">Your route drawn as moving lines, plus a passport stamp for each country, grouped by year. Built around your story.</p>
+<div class="phone"><div class="screen"><div class="sb"><span>10:20</span><span>5G · 82%</span></div><div class="body" data-v="c"></div><div class="nav"></div><div class="gest"><span></span></div><div class="toast"></div></div></div></div>
+</section>
+</div>
+<div id="embedRoot"><div class="body" data-v="embed" style="overflow:visible"></div><div class="toast"></div></div>
+
+<script>
+const C={bg:'#FFFCEE',accent:'#8A5A3B',ink:'#5E3B24',soft:'#FFF2B3',land:'#EAE0CC',coral:'#E8664A',ocean:'#FFF6CC'};
+const VISITED={'724':0,'620':2026,'250':2023,'380':2022,'504':2024,'076':2025,'484':2025,'764':2024,'360':2024,'300':2023,'826':2022,'276':2021,'032':2025,'152':2025};
+const NEXT='608';
+const Q=new URLSearchParams(location.search), EMBED=Q.get('embed'), ADD=Q.get('add');
+if(EMBED) document.body.classList.add('embed');
+const CONTS=[['Europe',44],['Asia',48],['Africa',54],['N. America',23],['S. America',12],['Oceania',14]];
+const ICONS={'724':'tapas','620':'tram','250':'bakery_dining','380':'local_pizza','504':'mosque','076':'sports_soccer','484':'festival','764':'temple_buddhist','360':'volcano','300':'account_balance','826':'castle','276':'sports_bar','032':'outdoor_grill','152':'filter_hdr','608':'surfing','604':'landscape','170':'local_cafe','528':'pedal_bike','756':'downhill_skiing','036':'surfing','144':'emoji_food_beverage','392':'ramen_dining','356':'temple_hindu','840':'location_city','124':'forest','818':'change_history','704':'rice_bowl','156':'temple_buddhist','410':'rice_bowl','458':'scuba_diving','554':'hiking','710':'pets','404':'pets','792':'mosque','352':'volcano','578':'sailing','752':'cabin','372':'sports_bar','040':'piano','203':'sports_bar','348':'hot_tub','191':'sailing','642':'castle','616':'castle','218':'pets','188':'forest','192':'music_note'};
+const ICON=id=>ICONS[id]?`<span class="ic">${ICONS[id]}</span>`:'';
+const STAMP_COLORS=['#8A5A3B','#3C5FA8','#1D7480','#A33A6B','#93650F'];
+let FEATS=[], BYID={};
+const NAMEFIX={'United States of America':'USA','United Kingdom':'UK','Dominican Rep.':'Dominican Rep.'};
+const nm=id=>{const f=BYID[id];const n=f?f.properties.name:id;return NAMEFIX[n]||n};
+function cont(f){const [lon,lat]=d3.geoCentroid(f);
+  if(lon<-25) return lat>8?'N. America':'S. America';
+  if(lon<60){ if(lat>35) return 'Europe'; if(lon>34&&lat>12) return 'Asia'; return 'Africa'; }
+  if(lat<-8&&lon>110) return 'Oceania'; return 'Asia';}
+function newState(){const m=new Map(Object.entries(VISITED)); if(ADD) m.set(ADD,2026); return m;}
+function toast(root,msg){const t=root.closest('.screen,#embedRoot').querySelector('.toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800);}
+function fillFor(st,id){return st.has(id)?C.accent:id===NEXT?'url(#hatch)':C.land;}
+function defs(svg){svg.append('defs').html(`<pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#FCE3DC"/><line x1="0" y1="0" x2="0" y2="5" stroke="${C.coral}" stroke-width="2.4"/></pattern>`);}
+function toggle(st,id,root){ if(st.has(id)){st.delete(id);toast(root,`${nm(id)} removed`);} else {st.set(id,2026);toast(root,`${nm(id)} added to your map ✓`);} }
+
+function buildA(el,W){
+  const st=newState();
+  el.innerHTML=`<div class="hd"><div class="k">Maria &amp; you</div><div class="t">Your world</div></div>
+  <div class="big"><span class="n"></span><span class="of">/ 195 countries · <b class="pct"></b></span></div>
+  <svg class="m"></svg><div class="hint">Tap a country to add or remove it</div><div class="conts"></div>`;
+  const w=W-16, h=Math.round(w*.56);
+  const svg=d3.select(el).select('svg.m').attr('width',W).attr('height',h).style('display','block');
+  defs(svg);
+  const proj=d3.geoNaturalEarth1().fitExtent([[8,4],[W-8,h-4]],{type:'Sphere'}), path=d3.geoPath(proj);
+  svg.append('path').datum({type:'Sphere'}).attr('d',path).attr('fill','#FBF3DA');
+  const ps=svg.append('g').selectAll('path').data(FEATS).join('path').attr('class','c').attr('d',path)
+    .on('click',(e,f)=>{toggle(st,f.id,el);upd();});
+  const rows=d3.select(el).select('.conts').selectAll('.cr').data(CONTS).join('div').attr('class','cr')
+    .html(d=>`<span>${d[0]}</span><span class="bar"><span></span></span><span class="v"></span>`);
+  function upd(){
+    ps.attr('fill',f=>fillFor(st,f.id));
+    el.querySelector('.n').textContent=st.size;
+    el.querySelector('.pct').textContent=Math.round(st.size/195*100)+'%';
+    const cnt={};st.forEach((_,id)=>{const f=BYID[id];if(f){const c=cont(f);cnt[c]=(cnt[c]||0)+1;}});
+    rows.select('.bar span').style('width',d=>Math.min(100,(cnt[d[0]]||0)/d[1]*100)+'%');
+    rows.select('.v').text(d=>`${cnt[d[0]]||0}/${d[1]}`);
+  }
+  upd();
+}
+
+function buildB(el,W){
+  const st=newState(); let sel=null;
+  el.innerHTML=`<div class="hd"><div class="k">Maria &amp; you</div><div class="t">Your world</div></div>
+  <div class="globeWrap"><svg class="g"></svg></div><div class="gstat"><b class="n"></b> countries · drag to spin</div><div class="chips"></div>`;
+  const S=Math.min(W-40,320);
+  const svg=d3.select(el).select('svg.g').attr('width',S).attr('height',S);
+  defs(svg);
+  const proj=d3.geoOrthographic().fitExtent([[4,4],[S-4,S-4]],{type:'Sphere'}).rotate([10,-20]).clipAngle(90), path=d3.geoPath(proj);
+  svg.append('circle').attr('cx',S/2).attr('cy',S/2).attr('r',proj.scale()+6).attr('fill',C.soft).attr('opacity',.5);
+  svg.append('path').datum({type:'Sphere'}).attr('fill',C.ocean).attr('stroke','#E9D9A6').attr('stroke-width',1.5);
+  svg.append('path').datum(d3.geoGraticule10()).attr('fill','none').attr('stroke','#EFE3BD').attr('stroke-width',.5);
+  const ps=svg.append('g').selectAll('path').data(FEATS).join('path').attr('class','c')
+    .on('click',(e,f)=>{toggle(st,f.id,el);focus(f.id);upd();});
+  const sph=svg.selectAll('path').filter(function(){return !this.classList.contains('c')});
+  let paused=0;
+  function draw(){sph.attr('d',path);ps.attr('d',path);}
+  d3.timer(()=>{ if(Date.now()<paused) return; const r=proj.rotate(); proj.rotate([r[0]+.18,r[1]]); draw(); });
+  svg.call(d3.drag().on('start',()=>{paused=Date.now()+1e9;}).on('drag',e=>{const r=proj.rotate();proj.rotate([r[0]+e.dx*.45,Math.max(-70,Math.min(70,r[1]-e.dy*.45))]);draw();}).on('end',()=>{paused=Date.now()+2500;}));
+  function focus(id){const f=BYID[id];if(!f) return;sel=id;const c=d3.geoCentroid(f),from=proj.rotate(),to=[-c[0],-c[1]*.8];paused=Date.now()+4000;
+    d3.transition().duration(900).ease(d3.easeCubicInOut).tween('r',()=>{const i=d3.interpolate(from,to);return t=>{proj.rotate(i(t));draw();};});upd();}
+  function upd(){
+    ps.attr('fill',f=>f.id===sel&&st.has(f.id)?C.ink:fillFor(st,f.id));
+    el.querySelector('.n').textContent=st.size;
+    const list=[[NEXT,'next'],...[...st.entries()].sort((a,b)=>(b[1]||9999)-(a[1]||9999)).map(([id,y])=>[id,y])].filter(([id,y])=>!(y==='next'&&st.has(NEXT)));
+    d3.select(el).select('.chips').selectAll('.chip').data(list,d=>d[0]).join('div')
+      .attr('class',d=>'chip'+(d[1]==='next'?' next':'')+(d[0]===sel?' sel':''))
+      .html(d=>`${nm(d[0])}<small>${d[1]==='next'?'Next · Tue 20':d[1]===0?'Home':d[1]}</small>`)
+      .on('click',(e,d)=>focus(d[0]));
+  }
+  draw();upd();
+}
+
+function buildC(el,W){
+  const st=newState();
+  el.innerHTML=`<div class="hd"><div class="k">Since 2021</div><div class="t">Your journey</div></div><svg class="m"></svg><div class="list"></div>`;
+  const h=Math.round(W*.6);
+  const svg=d3.select(el).select('svg.m').attr('width',W).attr('height',h).style('display','block');
+  defs(svg);
+  const land={type:'FeatureCollection',features:FEATS};
+  const proj=d3.geoNaturalEarth1().fitExtent([[10,10],[W-10,h-6]],land), path=d3.geoPath(proj);
+  const ps=svg.append('g').selectAll('path').data(FEATS).join('path').attr('class','c').attr('d',path)
+    .on('click',(e,f)=>{toggle(st,f.id,el);upd();});
+  const arcs=svg.append('g'), dots=svg.append('g'), pl=svg.append('g');
+  function hi(id){const f=BYID[id];if(!f) return;const p=proj(d3.geoCentroid(f));pl.selectAll('*').remove();
+    pl.append('circle').attr('class','pulse').attr('cx',p[0]).attr('cy',p[1]).attr('r',3);toast(el,nm(id));}
+  function upd(){
+    ps.attr('fill',f=>st.has(f.id)?'#D9B99A':f.id===NEXT?'url(#hatch)':C.land);
+    const order=[...st.entries()].filter(([id])=>BYID[id]).sort((a,b)=>a[1]-b[1]);
+    const pts=order.map(([id])=>d3.geoCentroid(BYID[id]));
+    const legs=[];for(let i=1;i<pts.length;i++) legs.push({type:'LineString',coordinates:[pts[i-1],pts[i]]});
+    arcs.selectAll('path').data(legs).join('path').attr('class','arc').attr('d',path);
+    const last=pts[pts.length-1];
+    arcs.selectAll('path.nx').remove();
+    if(!st.has(NEXT)&&last) arcs.append('path').attr('class','arc nx').attr('d',path({type:'LineString',coordinates:[last,d3.geoCentroid(BYID[NEXT])]}));
+    dots.selectAll('circle').data(order,d=>d[0]).join('circle').attr('r',3.2).attr('fill',C.ink).attr('stroke','#fff').attr('stroke-width',1.2)
+      .attr('cx',d=>proj(d3.geoCentroid(BYID[d[0]]))[0]).attr('cy',d=>proj(d3.geoCentroid(BYID[d[0]]))[1]);
+    const years=d3.groups([...st.entries()],d=>d[1]).sort((a,b)=>(b[0]||0)-(a[0]||0));
+    let html='';
+    if(!st.has(NEXT)) html+=`<div class="yr">NEXT</div><div class="stamps"><div class="stamp next" data-id="${NEXT}" style="color:${C.coral};transform:rotate(-2deg)">${ICON(NEXT)}<span class="e">ARRIVAL</span><span class="nm">${nm(NEXT)}</span><span class="y">Tue 20</span></div></div>`;
+    let k=0;
+    years.forEach(([y,list])=>{ html+=`<div class="yr">${y===0?'HOME':y}</div><div class="stamps">`;
+      list.forEach(([id])=>{const c=STAMP_COLORS[k%5],r=((k*37)%7)-3;k++;
+        html+=`<div class="stamp s${k%3}" data-id="${id}" style="color:${c};transform:rotate(${r}deg)">${ICON(id)}<span class="e">${y===0?'HOME':'ENTRY'}</span><span class="nm">${nm(id)}</span><span class="y">${y===0?'ES':y}</span></div>`;});
+      html+='</div>';});
+    const L=el.querySelector('.list');L.innerHTML=html+'<div style="height:16px"></div>';
+    L.querySelectorAll('.stamp').forEach(s=>s.onclick=()=>hi(s.dataset.id));
+  }
+  upd();
+}
+
+const VIS_D={
+  me:{'724':[0],'620':[2023,2026],'250':[2019,2023],'380':[2022],'504':[2024],'076':[2018,2025],'484':[2025],'764':[2024],'360':[2024],'300':[2023],'826':[2016,2022],'276':[2021],'032':[2025],'152':[2025]},
+  maria:{'724':[0],'620':[2026],'250':[2021],'380':[2019,2022],'076':[2025],'484':[2025],'032':[2025],'152':[2025],'604':[2017],'170':[2020],'528':[2023],'756':[2024]}};
+const SAMPLE=Q.get('sample')==='1', LIVE=Q.get('live')==='1';
+let SAVED=null; try{ SAVED=JSON.parse(localStorage.getItem('andando-map')||'null'); }catch(e){}
+const DATA_D={}, CHAL_SEEN={}; ['me','maria'].forEach(u=>{DATA_D[u]=new Map(SAMPLE?Object.entries(VIS_D[u]).map(([k,v])=>[k,[...v]]):(LIVE&&u==='me'&&SAVED?Object.entries(SAVED):[])); if(ADD){const y=DATA_D[u].get(ADD)||[]; if(!y.includes(2026)) DATA_D[u].set(ADD,[...y,2026]);}});
+function buildD(el,W){
+  let user=(Q.get('user')==='maria')?'maria':'me', st=DATA_D[user], sel=null, tab='visited';
+  const YEARS=[2026,2025,2024,2023,2022,2021,2020];
+  el.innerHTML=`<div class="hd row"><div><div class="k kk"></div><div class="t">Your world</div></div>${EMBED?'':'<div class="who"><button data-u="me">Me</button><button data-u="maria">Maria</button></div>'}</div>
+  <div class="race"></div>
+  <div class="globeWrap"><svg class="g"></svg><div class="info"></div></div>
+  <button class="tot"><span><b class="n"></b>countries</span><span class="sub"><span class="pct"></span> of the world · see all ›</span></button>
+  <div class="list"></div>`;
+  const host=el.closest('.screen,#embedRoot');
+  const sheet=document.createElement('div');sheet.className='sheet';
+  sheet.innerHTML=`<div class="sh-bg"></div><div class="sh"><div class="grab"></div><div class="sh-h"><div><div class="t2">All countries</div><div class="k"></div></div><button class="x">✕</button></div>
+  <div class="seg"><button data-t="visited">Visited</button><button data-t="all">All</button></div><div class="sh-list"></div></div>`;
+  host.appendChild(sheet);
+  const chal=document.createElement('div');chal.className='chal';host.appendChild(chal);
+  const other=()=>user==='me'?'maria':'me', oname=()=>user==='me'?'Maria':'Partner', oin=()=>user==='me'?'Maria':'your partner', oinC=()=>user==='me'?'Maria':'Your partner';
+  function race(){if(LIVE){el.querySelector('.race').style.display='none';return;}const a=st.size,b=DATA_D[other()].size;
+    el.querySelector('.race').innerHTML=`<span class="${a>b?'lead':''}">You <b>${a}</b></span><span class="${b>a?'lead':''}">${oname()} <b>${b}</b></span>`;}
+  function showChal(){ if(st.size>0||CHAL_SEEN[user]) {chal.classList.remove('open');return;}
+    const b=DATA_D[other()].size;
+    chal.innerHTML=`<div class="cc"><div class="kk2">THE RACE IS ON</div><h3>Paint your world</h3>
+      <p>Add every country you've ever been to. You and ${oin()} each have your own globe, and whoever has more takes the lead.${b?` ${oinC()} already has ${b}.`:' Go first.'}</p>
+      ${LIVE?'':`<div class="vs"><div><b>0</b><small>You</small></div><i>vs</i><div><b>${b}</b><small>${oname()}</small></div></div>`}
+      <button class="go">Add my countries</button><button class="later">Later</button></div>`;
+    chal.classList.add('open');
+    chal.querySelector('.go').onclick=()=>{CHAL_SEEN[user]=1;chal.classList.remove('open');tab='all';open();};
+    chal.querySelector('.later').onclick=()=>{CHAL_SEEN[user]=1;chal.classList.remove('open');};
+  }
+  const info=el.querySelector('.info');
+  const S=Math.min(W-60,290);
+  const svg=d3.select(el).select('svg.g').attr('width',S).attr('height',S);defs(svg);
+  const proj=d3.geoOrthographic().fitExtent([[4,4],[S-4,S-4]],{type:'Sphere'}).rotate([10,-20]).clipAngle(90),path=d3.geoPath(proj);
+  svg.append('circle').attr('cx',S/2).attr('cy',S/2).attr('r',proj.scale()+5).attr('fill',C.soft).attr('opacity',.5);
+  const sp=svg.append('path').datum({type:'Sphere'}).attr('fill',C.ocean).attr('stroke','#E9D9A6').attr('stroke-width',1.5).on('click',()=>closeInfo());
+  const gr=svg.append('path').datum(d3.geoGraticule10()).attr('fill','none').attr('stroke','#EFE3BD').attr('stroke-width',.5).style('pointer-events','none');
+  const ps=svg.append('g').selectAll('path').data(FEATS).join('path').attr('class','c').on('click',(e,f)=>{focus(f.id);showInfo(f.id);});
+  let paused=0;
+  function draw(){sp.attr('d',path);gr.attr('d',path);ps.attr('d',path);}
+  d3.timer(()=>{if(Date.now()<paused)return;const r=proj.rotate();proj.rotate([r[0]+.18,r[1]]);draw();});
+  svg.call(d3.drag().on('start',()=>{paused=Date.now()+1e9;}).on('drag',e=>{const r=proj.rotate();proj.rotate([r[0]+e.dx*.45,Math.max(-70,Math.min(70,r[1]-e.dy*.45))]);draw();}).on('end',()=>{paused=info.classList.contains('open')?Date.now()+1e9:Date.now()+2500;}));
+  function focus(id){const f=BYID[id];if(!f)return;sel=id;const c=d3.geoCentroid(f),from=proj.rotate(),to=[-c[0],-c[1]*.8];paused=Date.now()+1e9;
+    d3.transition().duration(900).ease(d3.easeCubicInOut).tween('r',()=>{const i=d3.interpolate(from,to);return t=>{proj.rotate(i(t));draw();};});recolor();}
+  function recolor(){ps.attr('fill',f=>f.id===sel?(st.has(f.id)?C.ink:'#C9B8A6'):fillFor(st,f.id));}
+  const ylab=y=>y===0?'Home':y==null?'Year?':y;
+  function showInfo(id){
+    const ys=(st.get(id)||[]).slice().sort((a,b)=>(a??-1)-(b??-1)), has=ys.length>0, onlyQ=has&&ys.every(y=>y==null);
+    const sub= ys.includes(0)?'Home country': onlyQ?'Visited · which year?': has?`${ys.length} visit${ys.length>1?'s':''}`: id===NEXT?'Next stop · Tue 20':'Not visited yet';
+    const add=YEARS.filter(y=>!ys.includes(y));
+    info.innerHTML=`<div class="top"><div><div class="nm2">${nm(id)}</div><div class="s2">${sub}</div></div><button class="x2">✕</button></div>
+      ${has?`<div class="yrs">${ys.map(y=>`<span>${ylab(y)}</span>`).join('')}</div>`:''}
+      <div class="addl">${onlyQ?'PICK THE YEAR':has?'ADD ANOTHER YEAR':'BEEN HERE? PICK THE YEAR'}</div>
+      <div class="acts">${add.slice(0,has?4:5).map(y=>`<button data-y="${y}">+ ${y}</button>`).join('')}${has&&!ys.includes(0)?'<button class="rm">Remove</button>':''}</div>`;
+    info.classList.add('open');
+    info.querySelector('.x2').onclick=closeInfo;
+    info.querySelectorAll('[data-y]').forEach(bt=>bt.onclick=()=>{const y=+bt.dataset.y;st.set(id,[...(st.get(id)||[]).filter(v=>v!=null),y]);toast(el,`${nm(id)} · ${y} added ✓`);upd();showInfo(id);});
+    const rm=info.querySelector('.rm'); if(rm) rm.onclick=()=>{st.delete(id);toast(el,`${nm(id)} removed`);upd();showInfo(id);};
+  }
+  function closeInfo(){info.classList.remove('open');sel=null;recolor();paused=Date.now()+800;}
+  function pairs(){const p=[];st.forEach((ys,id)=>ys.forEach(y=>p.push([id,y])));return p;}
+  function stamps(){
+    const years=d3.groups(pairs(),d=>d[1]).sort((a,b)=>(b[0]??-1)-(a[0]??-1));let html='',k=0;
+    if(!st.has(NEXT)) html+=`<div class="yr">NEXT</div><div class="stamps"><div class="stamp next" data-id="${NEXT}" style="color:${C.coral};transform:rotate(-2deg)">${ICON(NEXT)}<span class="e">ARRIVAL</span><span class="nm">${nm(NEXT)}</span><span class="y">Tue 20</span></div></div>`;
+    years.forEach(([y,list])=>{html+=`<div class="yr">${y===0?'HOME':y==null?'YEAR NOT SET':y} · ${list.length}</div><div class="stamps">`;
+      list.forEach(([id])=>{const c=y==null?'#A39888':STAMP_COLORS[k%5],r=((k*37)%7)-3;k++;html+=`<div class="stamp s${k%3}" data-id="${id}" style="color:${c};transform:rotate(${r}deg)">${ICON(id)}<span class="e">${y===0?'HOME':'ENTRY'}</span><span class="nm">${nm(id)}</span><span class="y">${y===0?'ES':y==null?'tap to set':y}</span></div>`;});html+='</div>';});
+    if(!st.size) html+='<div class="hint" style="padding:6px 20px 0">Your stamps will appear here.</div>';
+    const L=el.querySelector('.list');L.innerHTML=html+'<div style="height:16px"></div>';
+    L.querySelectorAll('.stamp').forEach(s=>s.onclick=()=>{focus(s.dataset.id);showInfo(s.dataset.id);host.querySelector('.body').scrollTo({top:0,behavior:'smooth'});});
+  }
+  function list(){
+    sheet.querySelector('.k').textContent=tab==='all'?`Tap every country you've been to · ${st.size} so far`:`${st.size} visited · ${Math.round(st.size/195*100)}% of 195`;
+    sheet.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.t===tab));
+    sheet.querySelector('[data-t="all"]').textContent=`All ${FEATS.length}`;
+    const totals=Object.fromEntries(CONTS);let html='';
+    CONTS.forEach(([cn])=>{
+      const all=FEATS.filter(f=>cont(f)===cn).sort((a,b)=>nm(a.id).localeCompare(nm(b.id)));
+      const vis=all.filter(f=>st.has(f.id)), rows=tab==='visited'?vis:all;
+      if(!rows.length) return;
+      html+=`<div class="gh"><span>${cn.toUpperCase()}</span><span>${vis.length}/${totals[cn]}</span></div>`;
+      rows.forEach(f=>{const ys=(st.get(f.id)||[]).slice().sort((a,b)=>(a??-1)-(b??-1)),has=ys.length>0,q=has&&ys.every(y=>y==null);
+        html+=`<div class="rw${f.id===NEXT&&!has?' nx':''}" data-id="${f.id}"><span>${nm(f.id)}</span>${has?`<span class="yy${q?' q':''}">${q?'✓ Added':ys.map(ylab).join(' · ')}</span>`:`<span class="ad">${f.id===NEXT?'Next · add':'+ Add'}</span>`}</div>`;});
+    });
+    const L=sheet.querySelector('.sh-list');const top=L.scrollTop;L.innerHTML=html;L.scrollTop=top;
+    L.querySelectorAll('.rw').forEach(r=>r.onclick=()=>{const id=r.dataset.id;
+      if(tab==='all'){ if(st.has(id)) st.delete(id); else st.set(id,[null]); upd(); return; }
+      close();focus(id);showInfo(id);});
+  }
+  function open(){sheet.classList.add('open');list();}
+  function close(){sheet.classList.remove('open');if(st.size&&tab==='all'){const n=[...st.values()].filter(y=>y.every(v=>v==null)).length;if(n)toast(el,`${st.size} countries · tap a stamp to set the years`);}}
+  el.querySelector('.tot').onclick=open;
+  sheet.querySelector('.sh-bg').onclick=close;sheet.querySelector('.x').onclick=close;
+  sheet.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;sheet.querySelector('.sh-list').scrollTop=0;list();});
+  el.querySelectorAll('.who button').forEach(b=>b.onclick=()=>{user=b.dataset.u;st=DATA_D[user];closeInfo();close();upd();showChal();});
+  function upd(){
+    el.querySelector('.kk').textContent=user==='maria'?'Maria · only you see this':'You · only you see this';
+    el.querySelectorAll('.who button').forEach(b=>b.classList.toggle('on',b.dataset.u===user));
+    recolor();el.querySelector('.n').textContent=st.size;el.querySelector('.pct').textContent=Math.round(st.size/195*100)+'%';stamps();race();if(sheet.classList.contains('open'))list();if(LIVE){try{localStorage.setItem('andando-map',JSON.stringify(Object.fromEntries(st)));}catch(e){}}}
+  draw();upd();showChal();
+}
+
+function navHTML(){return `<div><i>▤</i>Upcoming</div><div><i>QR</i>Tickets</div><span class="plus">+</span><div><i>✓</i>Trip</div><div class="on"><i>◎</i>Map</div>`;}
+
+d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m.json').then(topo=>{
+  FEATS=topojson.feature(topo,topo.objects.countries).features.filter(f=>f.id!=='010');
+  FEATS.forEach(f=>BYID[f.id]=f);
+  const B={a:buildA,b:buildB,c:buildC,d:buildD};
+  if(EMBED&&B[EMBED]){document.body.classList.add('embed');const el=document.querySelector('#embedRoot .body');B[EMBED](el,Math.min(window.innerWidth,520));return;}
+  document.querySelectorAll('.nav').forEach(n=>n.innerHTML=navHTML());
+  document.querySelectorAll('.canvas .body').forEach(el=>B[el.dataset.v](el,342));
+});
+</script>
+</body></html>
