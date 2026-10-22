@@ -71,7 +71,11 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 
 <sc-if value="{{ isUpcoming }}" hint-placeholder-val="{{ true }}">
 <div style="flex:1;min-height:0;display:flex;flex-direction:column">
-<div style="flex:none;display:flex;align-items:center;gap:4px;padding:12px 8px 2px">
+<div onTouchStart="{{ swipeStart }}" onTouchEnd="{{ swipeEnd }}" style="flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px 0;touch-action:pan-y">
+<div style="flex:none;display:flex;align-items:baseline;gap:8px;white-space:nowrap"><span style="font-size:24px;font-weight:800;letter-spacing:-.02em;white-space:nowrap">{{ monthLabel }}</span><span style="font-size:14px;font-weight:700;color:#A39888">{{ yearLabel }}</span></div>
+<sc-if value="{{ notThisWeek }}" hint-placeholder-val="{{ false }}"><button onClick="{{ goToday }}" style="all:unset;cursor:pointer;flex:none;font-size:12.5px;font-weight:800;padding:7px 11px;border-radius:11px;background:#FFF2B3;color:#5E3B24">Today</button></sc-if>
+</div>
+<div onTouchStart="{{ swipeStart }}" onTouchEnd="{{ swipeEnd }}" style="flex:none;display:flex;align-items:center;gap:4px;padding:8px 8px 2px;touch-action:pan-y">
 <button onClick="{{ prevWeek }}" style="all:unset;cursor:pointer;width:22px;height:66px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#A39888">‹</button>
 <sc-for list="{{ strip }}" as="d" hint-placeholder-count="7">
 <button onClick="{{ d.pick }}" style="all:unset;cursor:pointer;flex:1 1 0;min-width:0;height:66px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;border-radius:16px;background:{{ d.bg }};color:{{ d.fg }};border:{{ d.bd }}">
@@ -177,7 +181,7 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 </sc-if>
 
 <sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}">
-<div style="flex:1;min-height:0;display:flex;padding-top:6px"><iframe src="Travel%20Map%20Options.html?embed=d&amp;user=me&amp;live=1" title="Your world" style="border:0;width:100%;height:100%;display:block;background:#FFFCEE"></iframe></div>
+<div style="flex:1;min-height:0;display:flex;padding-top:6px"><iframe ref="{{ mapRef }}" src="Travel%20Map%20Options.html?embed=d&amp;user=me&amp;live=1&amp;v=2" title="Your world" style="border:0;width:100%;height:100%;display:block;background:#FFFCEE"></iframe></div>
 </sc-if>
 
 <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
@@ -201,7 +205,7 @@ input,textarea{font-family:'Nunito',system-ui,sans-serif}input::placeholder,text
 <button onClick="{{ openPrototype }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700">Design demo</span><span style="font-size:12.5px;font-weight:800;color:#5E3B24">Open ›</span></button>
 <button onClick="{{ doSignOut }}" style="all:unset;cursor:pointer;display:flex;align-items:center;gap:12px;padding:13px 18px"><span style="flex:1;font-size:14.5px;font-weight:700;color:#B4472F">Sign out</span></button>
 </div>
-<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v7</div>
+<div style="font:500 11px 'DM Mono',monospace;color:#A39888;text-align:center">Andando! · live v9</div>
 </div>
 </sc-if>
 
@@ -382,7 +386,12 @@ class Component extends DCLogic {
     entry: (()=>{ try{ return JSON.parse(localStorage.getItem('andando-entry')||'null'); }catch(e){ return null; } })() };
   fileRef = React.createRef(); codeRef = React.createRef(); unsub = [];
 
+  mapRef = React.createRef();
   componentDidMount(){
+    this._onMsg = e => { const m = e.data||{}; const u = this.state.user; if(!u) return;
+      if(m.type==='andando-map-ready'){ const w = this.mapRef.current && this.mapRef.current.contentWindow; if(w) w.postMessage({type:'andando-map-load', uid:u.uid, data:(this.state.me&&this.state.me.map)||{}},'*'); }
+      if(m.type==='andando-map-save' && m.data){ this.F.setDoc(this.F.doc(this.db,'users',u.uid),{map:m.data},{merge:true}).catch(()=>{}); } };
+    window.addEventListener('message', this._onMsg);
     try{ if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{}); }catch(e){}
     this.boot();
     setTimeout(()=>{ this.loadPdfjs().catch(()=>{}); if(this.state.key) this.pickModel(false).catch(()=>{}); }, 1500);
@@ -700,8 +709,15 @@ class Component extends DCLogic {
     const uid = s.user && s.user.uid, pid = s.me.partnerUid, pname = this.pName();
     const nav = (k,label,glyph) => ({label,glyph,bg:s.tab===k?'#FFF2B3':'transparent',fg:s.tab===k?'#5E3B24':'#5A524A',go:()=>this.setState({tab:k})});
 
-    const strip = Array.from({length:7},(_,i)=>{ const d = addDays(s.start,i), inf = this.dayInfo(d), sel = d===s.sel;
-      return {dow:DOW[dt(d).getDay()], num:dt(d).getDate(), bg:inf.pending?'#FCE3DC':'#FFFFFF', fg:inf.pending?'#B4472F':'#2A2622',
+    const wk = Array.from({length:7},(_,i)=>dt(addDays(s.start,i))), mc = {};
+    wk.forEach(x=>mc[x.getMonth()]=(mc[x.getMonth()]||0)+1);
+    const mainM = +Object.keys(mc).sort((p,q)=>mc[q]-mc[p])[0], wf = wk[0], wl = wk[6];
+    const MONL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthLabel = wf.getMonth()!==wl.getMonth() ? MON[wf.getMonth()]+' – '+MON[wl.getMonth()] : MONL[mainM];
+    const yearLabel = wf.getFullYear()!==wl.getFullYear() ? wf.getFullYear()+'–'+String(wl.getFullYear()).slice(2) : String(wl.getFullYear());
+    const notThisWeek = !(today>=s.start && today<=addDays(s.start,6));
+    const strip = Array.from({length:7},(_,i)=>{ const d = addDays(s.start,i), inf = this.dayInfo(d), sel = d===s.sel, om = dt(d).getMonth()!==mainM;
+      return {dow:DOW[dt(d).getDay()], num:dt(d).getDate(), bg:inf.pending?'#FCE3DC':'#FFFFFF', fg:inf.pending?'#B4472F':(om?'#B3A99C':'#2A2622'),
         bd: sel ? `2px solid ${inf.pending?'#B4472F':'#5E3B24'}` : (d===today ? '2px dashed #DDD3C4' : '2px solid transparent'),
         mark: inf.free ? '~' : inf.pending ? `•${inf.pending}` : inf.any ? '✓' : '·', pick:()=>this.setState({sel:d})}; });
 
@@ -776,6 +792,9 @@ class Component extends DCLogic {
       goSettings:()=>this.setState({tab:'settings'}),
       isUpcoming:s.tab==='upcoming', isTickets:s.tab==='tickets', isTrip:s.tab==='trip', isMap:s.tab==='map', isSettings:s.tab==='settings',
       navL:[nav('upcoming','Upcoming','▤'),nav('tickets','Tickets','QR')], navR:[nav('trip','Trip','✓'),nav('map','Map','◎')],
+      swipeStart:e=>{ const t=e.touches&&e.touches[0]; this._sx = t ? t.clientX : null; },
+      swipeEnd:e=>{ const t=e.changedTouches&&e.changedTouches[0]; if(this._sx==null||!t) return; const dx=t.clientX-this._sx; this._sx=null; if(Math.abs(dx)>40) this.setState({start:addDays(s.start, dx<0?7:-7)}); },
+      monthLabel, yearLabel, notThisWeek, goToday:()=>{ const k = Math.floor((dt(today)-dt(s.start))/864e5/7); this.setState({start:addDays(s.start,k*7), sel:today}); },
       strip, prevWeek:()=>this.setState({start:addDays(s.start,-7)}), nextWeek:()=>this.setState({start:addDays(s.start,7)}),
       day:{title: s.sel===today?'Today':s.sel===addDays(today,1)?'Tomorrow':DOWL[D.getDay()], sub:`${DOW[D.getDay()]} ${D.getDate()} ${MON[D.getMonth()]}`,
         isFree:free, canFree: free || inf.pending>0, freeLabel: free?'Unplanned ✕':'Leave unplanned', freeBg: free?'#F1EBE1':'#FFFFFF', freeFg: free?'#5A524A':'#7A7168', freeBd: free?'#F1EBE1':'#E7DFD2'},
